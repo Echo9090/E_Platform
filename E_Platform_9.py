@@ -28,6 +28,7 @@ class Person(ABC):
 class Student(Person):
     def __init__(self, first_name, last_name, age, sex, birthdate, place_of_birth):
         super().__init__(first_name, last_name, age, sex, birthdate, place_of_birth)
+        self._id = UserManager._generate_user_id("Student")  # Consistent ID
         self._enrolled_courses = []
 
     def enroll(self, course):
@@ -49,13 +50,15 @@ class Student(Person):
               f"Sex: {self._sex}\n"
               f"Birthdate: {self._birthdate}\n"
               f"Place of Birth: {self._place_of_birth}\n"
+              f"Email: {self.email}\n"
+              f"Password: {self.password}\n"
               f"Enrolled Courses: {enrolled_courses}")
         
 # Subclass: Instructor
 class Instructor(Person):
     def __init__(self, first_name, last_name, age, sex, birthdate, place_of_birth):
         super().__init__(first_name, last_name, age, sex, birthdate, place_of_birth)
-        self._id = UserManager._generate_user_id("Instructor")  # Generate consistent ID
+        self._id = UserManager._generate_user_id("Instructor")  # Consistent ID
         self._assigned_courses = []
 
     def assign_course(self, course):
@@ -77,8 +80,9 @@ class Instructor(Person):
               f"Sex: {self._sex}\n"
               f"Birthdate: {self._birthdate}\n"
               f"Place of Birth: {self._place_of_birth}\n"
+              f"Email: {self.email}\n"
+              f"Password: {self.password}\n"
               f"Assigned Courses: {assigned_courses}")
-        
 # Class: Course
 class Course:
     def __init__(self, course_id, name, start_date, end_date, description, capacity):
@@ -103,11 +107,11 @@ class Course:
                 f"Instructor: {instructor_name}\nEnrolled Students: {len(self._enrolled_students)} / {self._capacity}")
   
     def add_student(self, student):
-            if len(self._enrolled_students) < self._capacity:
-                self._enrolled_students.append(student)
-                print(f"Student {student._first_name} {student._last_name} added to course {self._name}.")
-            else:
-                print(f"Cannot add student. Course {self._name} is full.")
+        if len(self._enrolled_students) < self._capacity:
+            self._enrolled_students.append(student)
+            print(f"Student {student._first_name} {student._last_name} added to course {self._name}.")
+        else:
+            print(f"Course {self._name} is full. Cannot add student {student._first_name} {student._last_name}.")
 
 # Class: Enrollment
 class Enrollment:
@@ -121,9 +125,8 @@ class Enrollment:
     def approve(self):
         self._enrollment_status = "Approved"
         if self._student not in self._course._enrolled_students:
-            self._course.add_student(self._student)
-        print(f"Enrollment approved for {self._student._first_name} {self._student._last_name} in {self._course._name}.")
-
+            self._course.add_student(self._student)  # Updates course's student list
+        print(f"Enrollment for {self._student._first_name} {self._student._last_name} in course {self._course._name} approved.")
 
     def decline(self):
         self._enrollment_status = "Declined"
@@ -385,7 +388,7 @@ class EnrollmentManager:
         enrollment = EnrollmentManager.get_enrollment_by_id(enrollment_id)
         if enrollment:
             enrollment.approve()
-            print(f"Enrollment {enrollment_id} approved.")
+            print(f"Enrollment with ID {enrollment_id} has been approved successfully.")
         else:
             print("Enrollment not found.")
     
