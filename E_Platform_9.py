@@ -125,7 +125,7 @@ class Enrollment:
     def approve(self):
         self._enrollment_status = "Approved"
         if self._student not in self._course._enrolled_students:
-            self._course.add_student(self._student)  # Updates course's student list
+            self._student._enrolled_courses.append(self._course)  # Updates course's student list
         print(f"Enrollment for {self._student._first_name} {self._student._last_name} in course {self._course._name} approved.")
 
     def decline(self):
@@ -160,16 +160,26 @@ class Assignment:
         else:
             print(f"{student._first_name} {student._last_name} has already submitted this assignment.")
 
-    def grade(self, student, grade):
-        if student in self._submitted_students:
-            self._graded_students[student] = grade
-            print(f"{student._first_name} {student._last_name} graded: {grade}.")
-        else:
+    def grade(self, student, grade, max_grade):
+        """Grades a student's submission with validation."""
+        if student not in self._submitted_students:
             print(f"{student._first_name} {student._last_name} has not submitted this assignment.")
+            return
+
+        if grade > max_grade:
+            print(f"Error: Grade {grade} exceeds the maximum grade of {max_grade}.")
+            return
+
+        # Update or add the grade
+        self._graded_students[student] = grade
+        print(f"{student._first_name} {student._last_name} has been graded {grade}/{max_grade} for assignment {self._assignment_id}.")
 
     def __str__(self):
-        return (f"Assignment ID: {self._assignment_id}\nCourse: {self._course._name}\nDue Date: {self._due_date}\n"
-                f"Description: {self._description}\nSubmitted: {len(self._submitted_students)} students\n"
+        return (f"Assignment ID: {self._assignment_id}\n"
+                f"Course: {self._course._name}\n"  # Accessing course name
+                f"Due Date: {self._due_date}\n"
+                f"Description: {self._description}\n"
+                f"Submitted: {len(self._submitted_students)} students\n"
                 f"Graded: {len(self._graded_students)} students")
 
 # Class: Grade
@@ -179,6 +189,7 @@ class Grade:
         self._student = student
         self._course = course
         self._grade = grade
+        
 
     def get_grade(self):
         return self._grade
@@ -272,6 +283,8 @@ class UserManager:
                 user_type = "Instructor"
             elif isinstance(user, PlatformAdmin):
                 user_type = "Admin"
+                print(f"ID: {user._id}, Name: {user._admin_name}, Type: {user_type}")
+                continue
             else:
                 user_type = "Unknown"
 
@@ -280,6 +293,26 @@ class UserManager:
             first_name = getattr(user, "_first_name", "N/A")
             last_name = getattr(user, "_last_name", "N/A")
             print(f"ID: {user_id}, Name: {first_name} {last_name}, Type: {user_type}")
+    
+    @staticmethod
+    def remove_student(student_id):
+        """Removes a student by their ID."""
+        for user in UserManager._users:
+            if isinstance(user, Student) and user._id == student_id:
+                UserManager._users.remove(user)
+                print(f"Student with ID {student_id} has been removed.")
+                return
+        print(f"Student with ID {student_id} not found.")
+
+    @staticmethod
+    def remove_instructor(instructor_id):
+        """Removes an instructor by their ID."""
+        for user in UserManager._users:
+            if isinstance(user, Instructor) and user._id == instructor_id:
+                UserManager._users.remove(user)
+                print(f"Instructor with ID {instructor_id} has been removed.")
+                return
+        print(f"Instructor with ID {instructor_id} not found.")
 
 class PlatformAdmin:
     def __init__(self, admin_id, admin_name):
@@ -287,10 +320,10 @@ class PlatformAdmin:
         self._admin_name = admin_name
 
     def display_profile(self):
-        print(f"Admin Profile:\nID: {self._id}\nName: {self._admin_name}")
+        print(f"Admin Profile:\nID: {self._id}\nName: {self._first_name}")
 
     def __str__(self):
-        return f"Admin: {self._admin_name} (ID: {self._id})"
+        return f"Admin: {self._first_name} (ID: {self._id})"
 
 class CourseManager:
     _courses = []
@@ -316,10 +349,10 @@ class CourseManager:
 
     @staticmethod
     def get_course_by_id(course_id):
+        """Retrieve a course by its ID."""
         for course in CourseManager._courses:
             if course._course_id == course_id:
                 return course
-        print("Course not found.")
         return None
 
     @staticmethod
@@ -342,19 +375,20 @@ class CourseManager:
             print(course)
     @staticmethod
     def apply_to_course(instructor, course):
+        """Allows an instructor to apply for a course."""
         if course._instructor:
-            print(f"Course {course._name} already has an assigned instructor.")
+            print(f"Course {course._name} already has an assigned instructor: {course._instructor._first_name} {course._instructor._last_name}.")
             return
 
         if course._course_id not in CourseManager._applications:
             CourseManager._applications[course._course_id] = []
 
-        # Prevent duplicate applications
+        # Check for duplicate applications
         if instructor in CourseManager._applications[course._course_id]:
             print(f"Instructor {instructor._first_name} {instructor._last_name} has already applied for this course.")
         else:
             CourseManager._applications[course._course_id].append(instructor)
-            print(f"Instructor {instructor._first_name} {instructor._last_name} (ID: {instructor._id}) applied for course {course._name}.")
+            print(f"Instructor {instructor._first_name} {instructor._last_name} successfully applied for course {course._name}.")
 
     @staticmethod
     def view_applications_for_course(course):
@@ -372,15 +406,24 @@ class EnrollmentManager:
     
     @staticmethod
     def create_enrollment(student, course):
+    # Check for duplicate enrollments
+        for enrollment in EnrollmentManager._enrollments:
+            if enrollment._student == student and enrollment._course == course:
+                print(f"Student {student._first_name} {student._last_name} is already enrolled or has a pending enrollment in course {course._name}.")
+            return None
+
+        # Existing payment method logic
         print("Choose Payment Method:\n1. PayPal\n2. GCash\n3. Debit Card")
         payment_choice = input("Enter payment option (1, 2, or 3): ")
         payment_methods = { "1": "PayPal", "2": "GCash", "3": "Debit Card" }
         payment_status = "Paid" if payment_choice in payment_methods else "Pending"
         
+        # Create and add the enrollment
         enrollment = Enrollment(student, course, payment_status)
         EnrollmentManager._enrollments.append(enrollment)
         print(f"Enrollment created: {enrollment}")
         return enrollment
+
 
 
     @staticmethod
@@ -430,11 +473,15 @@ class AssignmentManager:
     _assignments = []
 
     @staticmethod
-    def add_assignment(course, assignment_id, due_date, description):
+    def add_assignment(course_id, assignment_id, due_date, description):
+        course = CourseManager.get_course_by_id(course_id)
+        if not course:
+            print("Course not found. Assignment not created.")
+            return
+
         assignment = Assignment(assignment_id, course, due_date, description)
         AssignmentManager._assignments.append(assignment)
-        print(f"Assignment added: {assignment}")
-        return assignment
+        print(f"Assignment added:\n{assignment}")
 
     @staticmethod
     def submit_assignment(student, assignment_id):
@@ -445,39 +492,84 @@ class AssignmentManager:
             print("Assignment not found.")
 
     @staticmethod
-    def grade_assignment(assignment_id, student, grade):
+    def grade_assignment(assignment_id, student_id, grade, max_grade):
+        """Grades a student's submitted assignment with max grade validation."""
         assignment = AssignmentManager.get_assignment_by_id(assignment_id)
-        if assignment:
-            assignment.grade(student, grade)
-        else:
-            print("Assignment not found.")
+        if not assignment:
+                print("Assignment not found.")
+                return
+
+        student = UserManager.find_user_by_id(student_id)
+        if not student or not isinstance(student, Student):
+                print("Student not found.")
+                return
+
+        assignment.grade(student, grade, max_grade)
 
     @staticmethod
     def get_assignment_by_id(assignment_id):
+        """Retrieves an assignment by its ID."""
         for assignment in AssignmentManager._assignments:
             if assignment._assignment_id == assignment_id:
                 return assignment
-        print("Assignment not found.")
         return None
+    
+    @staticmethod
+    def view_all_assignments(course):
+        """Displays all assignments for a specific course."""
+        assignments_for_course = [assignment for assignment in AssignmentManager._assignments if assignment._course == course]
+        if not assignments_for_course:
+            print(f"No assignments found for course: {course._name}")
+            return
+
+        print(f"\n--- Assignments for Course: {course._name} ---")
+        for assignment in assignments_for_course:
+            print(assignment)
 
 class GradeManager:
     _grades = []
 
     @staticmethod
     def assign_grade(student, course, grade_value):
+        """Assign a grade to a specific student for a course."""
         grade = Grade(student, course, grade_value)
         GradeManager._grades.append(grade)
-        print(f"Grade assigned: {grade}")
+        print(f"Grade assigned: {grade}")   
         return grade
 
     @staticmethod
     def view_student_grades(student):
+        """View all grades assigned to a student."""
         student_grades = [grade for grade in GradeManager._grades if grade._student == student]
         if not student_grades:
             print(f"No grades found for {student._first_name} {student._last_name}.")
             return
         for grade in student_grades:
             print(grade)
+
+    @staticmethod
+    def grade_course(course_id, instructor):
+        """Allows an instructor to grade all students in a course."""
+        course = CourseManager.get_course_by_id(course_id)
+        if not course:
+            print("Course not found.")
+            return
+
+        if course._instructor != instructor:
+            print("You are not assigned to this course.")
+            return
+
+        if not course._enrolled_students:
+            print(f"No students are enrolled in the course {course._name}.")
+            return
+
+        print(f"\n--- Grading Course: {course._name} ---")
+        for student in course._enrolled_students:
+            try:
+                grade_value = float(input(f"Enter grade for {student._first_name} {student._last_name}: "))
+                GradeManager.assign_grade(student, course, grade_value)  # Reuse assign_grade method
+            except ValueError:
+                print(f"Invalid input. Skipping {student._first_name} {student._last_name}.")
 
 def general_menu():
     while True:
@@ -577,11 +669,15 @@ def student_menu(student):
                 EnrollmentManager.create_enrollment(student, course)
         elif choice == "4":
             GradeManager.view_student_grades(student)
-        elif choice == "5":
-            course_id = input("Enter Course ID to view assignments: ")
+
+        elif choice == "5":  # View Assignments
+            course_id = input("Enter Course ID to view assignments: ").strip()
             course = CourseManager.get_course_by_id(course_id)
-            if course:
+            if not course:
+                print("Course not found.")
+            else:
                 AssignmentManager.view_all_assignments(course)
+
         elif choice == "6":
             assignment_id = input("Enter Assignment ID to submit: ")
             AssignmentManager.submit_assignment(student, assignment_id)
@@ -609,27 +705,36 @@ def instructor_menu(instructor):
             instructor.display_profile()
         elif choice == "2":
             CourseManager.view_available_courses()
+
         elif choice == "3":  # Apply to Course
-            course_id = input("Enter Course ID to apply for: ")
+            course_id = input("Enter Course ID to apply for: ").strip()
             course = CourseManager.get_course_by_id(course_id)
-            if course:
-                CourseManager.apply_to_course(instructor, course)
-            else:
+            if not course:
                 print("Course not found.")
-        elif choice == "4":
-            course_id = input("Enter Course ID to add assignment: ")
-            assignment_id = input("Assignment ID: ")
-            due_date = input("Due Date (MM/DD/YYYY): ")
-            description = input("Assignment Description: ")
-            AssignmentManager.add_assignment(course_id, assignment_id, due_date, description)
-        elif choice == "5":
+            else:
+                CourseManager.apply_to_course(instructor, course)
+
+
+        elif choice == "4":  # Add Assignment
+            course_id = input("Enter Course ID: ")
             assignment_id = input("Enter Assignment ID: ")
-            student_id = input("Enter Student ID to grade: ")
-            grade = input("Enter Grade: ")
-            AssignmentManager.grade_assignment(assignment_id, student_id, grade)
-        elif choice == "6":
-            course_id = input("Enter Course ID to grade: ")
+            due_date = input("Enter Due Date (MM/DD/YYYY): ")
+            description = input("Enter Assignment Description: ")
+            AssignmentManager.add_assignment(course_id, assignment_id, due_date, description)
+
+        elif choice == "5":  # Grade Assignment
+            assignment_id = input("Enter Assignment ID: ").strip()
+            student_id = input("Enter Student ID to grade: ").strip()
+            max_grade = float(input("Enter Maximum Grade: "))  # Prompt for maximum grade
+            grade = float(input("Enter Grade to assign: "))  # Prompt for grade
+            AssignmentManager.grade_assignment(assignment_id, student_id, grade, max_grade)  # Pass max_grade
+
+
+        elif choice == "6":  # Grade Course
+            course_id = input("Enter Course ID to grade: ").strip()
             GradeManager.grade_course(course_id, instructor)
+
+
         elif choice == "7":
             print("Logging out...")
             break
@@ -691,14 +796,19 @@ def admin_menu(admin):
                     EnrollmentManager.approve_enrollment(enrollment_id)
                 elif sub_choice == "2":
                     EnrollmentManager.decline_enrollment(enrollment_id)
-        elif choice == "6":  # Drop User
+
+        elif choice == "6":  # Drop Student/Instructor
             print("Options:\n1. Drop Student\n2. Drop Instructor")
             sub_choice = input("Choose an option: ")
             user_id = input("Enter User ID: ")
+
             if sub_choice == "1":
                 UserManager.remove_student(user_id)
             elif sub_choice == "2":
                 UserManager.remove_instructor(user_id)
+            else:
+                print("Invalid option.")
+
         elif choice == "7":  # Logout
             print("Logging out...")
             break
