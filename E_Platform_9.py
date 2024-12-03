@@ -53,6 +53,28 @@ class Student(Person):
               f"Email: {self.email}\n"
               f"Password: {self.password}\n"
               f"Enrolled Courses: {enrolled_courses}")
+    
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict.update({
+            "enrolled_courses": [course._course_id for course in self._enrolled_courses]
+        })
+        return base_dict
+
+    # New JSON Deserialization Method
+    @staticmethod
+    def from_dict(data):
+        student = Student(
+            data["first_name"], 
+            data["last_name"], 
+            data["age"], 
+            data["sex"], 
+            data["birthdate"], 
+            data["place_of_birth"]
+        )
+        student._id = data["id"]
+        # Enrolled courses will be linked separately after loading
+        return student
         
 # Subclass: Instructor
 class Instructor(Person):
@@ -96,8 +118,15 @@ class Course:
         self._instructor = None  # Assigned Instructor
 
     def assign_instructor(self, instructor):
+        """Assigns an instructor to the course."""
+        if self._instructor:
+            print(f"Course {self._name} already has an assigned instructor.")
+            return
+
         self._instructor = instructor
-        print(f"Instructor {instructor._first_name} {instructor._last_name} assigned to course {self._name}.")
+        if self not in instructor._assigned_courses:
+            instructor._assigned_courses.append(self)  # Update instructor's assigned courses
+        print(f"Instructor {instructor._first_name} {instructor._last_name} has been assigned to course {self._name}.")
 
     def __str__(self):
         instructor_name = f"{self._instructor._first_name} {self._instructor._last_name}" if self._instructor else "None"
@@ -123,11 +152,16 @@ class Enrollment:
         self._enrollment_status = enrollment_status
 
     def approve(self):
+        """Approves the enrollment and adds the student to the course."""
         self._enrollment_status = "Approved"
-        if self._student not in self._course._enrolled_students:
-            self._student._enrolled_courses.append(self._course)  # Updates course's student list
-        print(f"Enrollment for {self._student._first_name} {self._student._last_name} in course {self._course._name} approved.")
 
+        # Add student to the course's enrolled students list if not already present
+        if self._student not in self._course._enrolled_students:
+            self._course._enrolled_students.append(self._student)
+            print(f"Student {self._student._first_name} {self._student._last_name} added to course {self._course._name}.")
+        else:
+            print(f"Student {self._student._first_name} {self._student._last_name} is already enrolled in course {self._course._name}.")
+   
     def decline(self):
         self._enrollment_status = "Declined"
 
@@ -375,9 +409,9 @@ class CourseManager:
             print(course)
     @staticmethod
     def apply_to_course(instructor, course):
-        """Allows an instructor to apply for a course."""
+        """Allows an instructor to apply for a course if it has no assigned instructor."""
         if course._instructor:
-            print(f"Course {course._name} already has an assigned instructor: {course._instructor._first_name} {course._instructor._last_name}.")
+            print(f"Course {course._name} already has an assigned instructor: {course._instructor._first_name} {course._instructor._last_name}. You cannot apply.")
             return
 
         if course._course_id not in CourseManager._applications:
@@ -399,6 +433,44 @@ class CourseManager:
         print(f"\n--- Applications for Course: {course._name} ---")
         for instructor in CourseManager._applications[course._course_id]:
             print(f"Instructor ID: {instructor._id}, Name: {instructor._first_name} {instructor._last_name}")
+
+    @staticmethod
+    def view_users_in_course(course_id):
+        """Displays users (instructor and students) in a specific course."""
+        course = CourseManager.get_course_by_id(course_id)
+        if not course:
+            print("Course not found.")
+            return
+
+        print(f"\n--- Users in Course: {course._name} ---")
+        print(f"Course ID: {course._course_id}")
+        print(f"Course Name: {course._name}")
+        print(f"Capacity: {len(course._enrolled_students)}/{course._capacity}")
+        print("\nInstructor:")
+        if course._instructor:
+            print(f"ID: {course._instructor._id}, Name: {course._instructor._first_name} {course._instructor._last_name}")
+        else:
+            print("No instructor assigned.")
+
+        print("\nStudents:")
+        if course._enrolled_students:
+            for student in course._enrolled_students:
+                print(f"ID: {student._id}, Name: {student._first_name} {student._last_name}")
+        else:
+            print("No students enrolled.")
+    
+    @staticmethod
+    def view_students_in_course(course):
+        """Displays all students enrolled in a specific course."""
+        if not course._enrolled_students:
+            print(f"No students are enrolled in the course: {course._name}")
+            return
+
+        print(f"\n--- Students in Course: {course._name} ---")
+        print(f"Course ID: {course._course_id}, Course Name: {course._name}")
+        for student in course._enrolled_students:
+            print(f"Student ID: {student._id}, Student Name: {student._first_name} {student._last_name}")
+
 
 class EnrollmentManager:
     _enrollments = []
@@ -525,6 +597,45 @@ class AssignmentManager:
         print(f"\n--- Assignments for Course: {course._name} ---")
         for assignment in assignments_for_course:
             print(assignment)
+    
+    @staticmethod
+    def view_assignment_grades(student, course):
+        """Displays the assignment grades for a student in a specific course."""
+        assignments_for_course = [assignment for assignment in AssignmentManager._assignments if assignment._course == course]
+
+        if not assignments_for_course:
+            print(f"No assignments found for course: {course._name}")
+            return
+
+        print(f"\n--- Assignment Grades for Course: {course._name} ---")
+        for assignment in assignments_for_course:
+            grade = assignment._graded_students.get(student, "None")
+            print(f"Assignment ID: {assignment._assignment_id}, "
+                  f"Assignment Name: {assignment._description}, "
+                  f"Assignment Grade: {grade}")
+    
+    @staticmethod
+    def view_passed_assignments(course, passing_grade=5):
+        """Displays all assignments and the students who passed them in a specific course."""
+        assignments_for_course = [assignment for assignment in AssignmentManager._assignments if assignment._course == course]
+
+        if not assignments_for_course:
+            print(f"No assignments found for course: {course._name}")
+            return
+
+        print(f"\n--- Passed Assignments for Course: {course._name} ---")
+        print(f"Course ID: {course._course_id}, Course Name: {course._name}\n")
+
+        for assignment in assignments_for_course:
+            print(f"Assignment ID: {assignment._assignment_id}, Description: {assignment._description}")
+            passed_students = [student for student, grade in assignment._graded_students.items() if grade is not None and grade >= passing_grade]
+
+            if not passed_students:
+                print("No students passed this assignment.\n")
+            else:
+                for student in passed_students:
+                    print(f"Student Name: {student._first_name} {student._last_name}")
+                print()
 
 class GradeManager:
     _grades = []
@@ -654,19 +765,32 @@ def student_menu(student):
         print("4. View Grades")
         print("5. View Assignments")
         print("6. Submit Assignment")
-        print("7. Notifications")
-        print("8. Logout")
+        print("7. View Assignment Grades")
+        print("8. Notifications")
+        print("9. Logout")
         choice = input("Enter your choice: ")
         
         if choice == "1":
             student.display_profile()
         elif choice == "2":
             CourseManager.view_all_courses()
-        elif choice == "3":
-            course_id = input("Enter Course ID to enroll: ")
+
+        elif choice == "3":  # Enroll in Course
+            print("\n--- Available Courses ---")
+            CourseManager.view_available_courses()  # Reuse the existing method to display all courses
+
+            course_id = input("\nEnter Course ID to enroll: ").strip()
             course = CourseManager.get_course_by_id(course_id)
-            if course:
+            if not course:
+                print("Course not found.")
+            elif len(course._enrolled_students) >= course._capacity:
+                print("Course is full. Cannot enroll.")
+            elif course in student._enrolled_courses:
+                print(f"You are already enrolled in the course: {course._name}.")
+            else:
                 EnrollmentManager.create_enrollment(student, course)
+
+
         elif choice == "4":
             GradeManager.view_student_grades(student)
 
@@ -681,9 +805,20 @@ def student_menu(student):
         elif choice == "6":
             assignment_id = input("Enter Assignment ID to submit: ")
             AssignmentManager.submit_assignment(student, assignment_id)
-        elif choice == "7":
-            print("Feature not implemented: Notifications will be handled later.")
+        
+        elif choice == "7":  # View Assignment Grades
+            course_id = input("Enter Course ID to view assignment grades: ").strip()
+            course = CourseManager.get_course_by_id(course_id)
+            if not course:
+                print("Course not found.")
+            elif course not in student._enrolled_courses:
+                print(f"You are not enrolled in course: {course._name}.")
+            else:
+                AssignmentManager.view_assignment_grades(student, course)
+
         elif choice == "8":
+            print("Feature not implemented: Notifications will be handled later.")
+        elif choice == "9":
             print("Logging out...")
             break
         else:
@@ -695,14 +830,17 @@ def instructor_menu(instructor):
         print("1. View Profile")
         print("2. View Available Courses")
         print("3. Apply to Course")
-        print("4. Add Assignment")
-        print("5. Grade Assignment")
-        print("6. Grade Course")
-        print("7. Logout")
+        print("4. View Students Enrolled in your Course")
+        print("5. Add Assignment")
+        print("6. View Who Has Passed Assignments")
+        print("7. Grade Assignment")
+        print("8. Grade Course")
+        print("9. Logout")
         choice = input("Enter your choice: ")
 
         if choice == "1":
             instructor.display_profile()
+            
         elif choice == "2":
             CourseManager.view_available_courses()
 
@@ -715,14 +853,36 @@ def instructor_menu(instructor):
                 CourseManager.apply_to_course(instructor, course)
 
 
-        elif choice == "4":  # Add Assignment
+        elif choice == "4":  # View All Students in Course
+            course_id = input("Enter Course ID: ").strip()
+            course = CourseManager.get_course_by_id(course_id)
+            if not course:
+                print("Course not found.")
+            elif course._instructor != instructor:
+                print("You are not assigned to this course.")
+            else:
+                CourseManager.view_students_in_course(course)
+
+
+        elif choice == "5":  # Add Assignment
             course_id = input("Enter Course ID: ")
             assignment_id = input("Enter Assignment ID: ")
             due_date = input("Enter Due Date (MM/DD/YYYY): ")
             description = input("Enter Assignment Description: ")
             AssignmentManager.add_assignment(course_id, assignment_id, due_date, description)
 
-        elif choice == "5":  # Grade Assignment
+        elif choice == "6":  # View Passed Assignments
+            course_id = input("Enter Course ID: ").strip()
+            course = CourseManager.get_course_by_id(course_id)
+            if not course:
+                print("Course not found.")
+            elif course._instructor != instructor:
+                print("You are not assigned to this course.")
+            else:
+                AssignmentManager.view_passed_assignments(course)
+
+
+        elif choice == "7":  # Grade Assignment
             assignment_id = input("Enter Assignment ID: ").strip()
             student_id = input("Enter Student ID to grade: ").strip()
             max_grade = float(input("Enter Maximum Grade: "))  # Prompt for maximum grade
@@ -730,12 +890,12 @@ def instructor_menu(instructor):
             AssignmentManager.grade_assignment(assignment_id, student_id, grade, max_grade)  # Pass max_grade
 
 
-        elif choice == "6":  # Grade Course
+        elif choice == "8":  # Grade Course
             course_id = input("Enter Course ID to grade: ").strip()
             GradeManager.grade_course(course_id, instructor)
 
 
-        elif choice == "7":
+        elif choice == "9": # Log out
             print("Logging out...")
             break
         else:
@@ -748,10 +908,11 @@ def admin_menu(admin):
         print("1. Create Course")
         print("2. Drop Course")
         print("3. View All Users")
-        print("4. Assign Instructor to Course")
-        print("5. Approve/Reject Student Enrollments")
-        print("6. Drop Student/Instructor")
-        print("7. Logout")
+        print("4. View User in specified Course")
+        print("5. Assign Instructor to Course")
+        print("6. Approve/Reject Student Enrollments")
+        print("7. Drop Student/Instructor")
+        print("8. Logout")
         choice = input("Enter your choice: ")
 
         if choice == "1":  # Create Course
@@ -768,7 +929,12 @@ def admin_menu(admin):
         elif choice == "3":  # View All Users
             UserManager.view_all_users()
 
-        elif choice == "4":  # Assign Instructor to Course
+        elif choice == "4":  # View Users in a Specific Course
+            course_id = input("Enter Course ID: ").strip()
+            CourseManager.view_users_in_course(course_id)
+
+
+        elif choice == "5":  # Assign Instructor to Course
             course_id = input("Enter Course ID: ")
             course = CourseManager.get_course_by_id(course_id)
             if course:
@@ -784,7 +950,7 @@ def admin_menu(admin):
                     print("Instructor not found.")
 
 
-        elif choice == "5":  # Approve/Reject Enrollments
+        elif choice == "6":  # Approve/Reject Enrollments
             course_id = input("Enter Course ID to manage enrollments: ")
             course = CourseManager.get_course_by_id(course_id)
             if course:
@@ -797,7 +963,7 @@ def admin_menu(admin):
                 elif sub_choice == "2":
                     EnrollmentManager.decline_enrollment(enrollment_id)
 
-        elif choice == "6":  # Drop Student/Instructor
+        elif choice == "7":  # Drop Student/Instructor
             print("Options:\n1. Drop Student\n2. Drop Instructor")
             sub_choice = input("Choose an option: ")
             user_id = input("Enter User ID: ")
@@ -809,7 +975,7 @@ def admin_menu(admin):
             else:
                 print("Invalid option.")
 
-        elif choice == "7":  # Logout
+        elif choice == "8":  # Logout
             print("Logging out...")
             break
         else:
