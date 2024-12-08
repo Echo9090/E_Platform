@@ -1,0 +1,50 @@
+[
+    {
+        "id": "ADM-24-600240",
+        "type": "Admin",
+        "name": "Marcu",
+        "email": "admin-adm-24-600240@platform.com",
+        "password": "N8cmz$"
+    },
+    {
+        "id": "STU-24-364093",
+        "type": "Student",
+        "first_name": "Mana",
+        "last_name": "Malarky",
+        "age": 17,
+        "sex": "Female",
+        "birthdate": "09/11/2007",
+        "place_of_birth": "Cebu City",
+        "email": "mana.malarky@platform.com",
+        "password": "HzuYKK",
+        "enrolled_courses": []
+    },
+    {
+        "id": "INS-24-141875",
+        "type": "Instructor",
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "age": 24,
+        "sex": "Female",
+        "birthdate": "10/24/2000",
+        "place_of_birth": "Antinpolo City",
+        "email": "jane.doe@platform.com",
+        "password": "xqBvMU",
+        "assigned_courses": [
+            "CRS-c47b6d"
+        ]
+    },
+    {
+        "id": "INS-24-156201",
+        "type": "Instructor",
+        "first_name": "Garry",
+        "last_name": "Blue",
+        "age": 34,
+        "sex": "Male",
+        "birthdate": "09/15/1990",
+        "place_of_birth": "Portland",
+        "email": "garry.blue@platform.com",
+        "password": "u6ZHb2",
+        "assigned_courses": []
+    }
+]

@@ -1,0 +1,14 @@
+[
+    {
+        "course_id": "CRS-c47b6d",
+        "name": "Math 01",
+        "start_date": "08/16/2024",
+        "end_date": "12/16/2024",
+        "description": "Basic Mathematics Course",
+        "capacity": 20,
+        "enrolled_students": [
+            "STU-24-364093"
+        ],
+        "instructor": "INS-24-141875"
+    }
+]
