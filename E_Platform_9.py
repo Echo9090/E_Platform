@@ -1,6 +1,35 @@
 from abc import ABC, abstractmethod
 import uuid
 import json
+import os
+
+
+SAVE_FOLDER = r"C:\Users\Cholo\OneDrive\Desktop\Code_Activities\CS_06\Case_Study_3\Case3_json"
+
+# Ensure the folder exists
+if not os.path.exists(SAVE_FOLDER):
+    os.makedirs(SAVE_FOLDER)
+
+print("Current Working Directory:", os.getcwd())
+
+
+def load_json(filename):
+    """Load JSON data from a file in SAVE_FOLDER."""
+    filepath = os.path.join(SAVE_FOLDER, filename)
+    if os.path.exists(filepath):
+        with open(filepath, "r") as file:
+            return json.load(file)
+    return []
+
+def save_json(filename, data):
+    """Save JSON data to a file in SAVE_FOLDER."""
+    filepath = os.path.join(SAVE_FOLDER, filename)
+    print(f"Saving data to {filepath}...")  # Debug log
+    with open(filepath, "w") as file:
+        json.dump(data, file, indent=4)
+    print(f"Data successfully saved to {filepath}.")  # Debug log
+
+
 
 # Base Abstract Class: Person
 class Person(ABC):
@@ -64,18 +93,37 @@ class Student(Person):
     # New JSON Deserialization Method
     @staticmethod
     def from_dict(data):
+        """Create a Student object from a dictionary."""
         student = Student(
-            data["first_name"], 
-            data["last_name"], 
-            data["age"], 
-            data["sex"], 
-            data["birthdate"], 
+            data["first_name"],
+            data["last_name"],
+            data["age"],
+            data["sex"],
+            data["birthdate"],
             data["place_of_birth"]
         )
         student._id = data["id"]
+        student.email = data.get("email", "")  # Provide default if missing
+        student.password = data.get("password", "")  # Provide default if missing
         # Enrolled courses will be linked separately after loading
         return student
-        
+
+    def to_dict(self):
+        """Convert a Student object to a dictionary."""
+        return {
+            "id": self._id,
+            "type": "Student",
+            "first_name": self._first_name,
+            "last_name": self._last_name,
+            "age": self._age,
+            "sex": self._sex,
+            "birthdate": self._birthdate,
+            "place_of_birth": self._place_of_birth,
+            "email": getattr(self, "email", ""),  # Safeguard if email is missing
+            "password": getattr(self, "password", ""),  # Safeguard if password is missing
+            "enrolled_courses": [course._course_id for course in self._enrolled_courses]
+        }
+
 # Subclass: Instructor
 class Instructor(Person):
     def __init__(self, first_name, last_name, age, sex, birthdate, place_of_birth):
@@ -105,7 +153,38 @@ class Instructor(Person):
               f"Email: {self.email}\n"
               f"Password: {self.password}\n"
               f"Assigned Courses: {assigned_courses}")
-# Class: Course
+    
+    def to_dict(self):
+        return {
+            "id": self._id,
+            "type": "Instructor",
+            "first_name": self._first_name,
+            "last_name": self._last_name,
+            "age": self._age,
+            "sex": self._sex,
+            "birthdate": self._birthdate,
+            "place_of_birth": self._place_of_birth,
+            "email": self.email,
+            "password": self.password,
+            "assigned_courses": [course._course_id for course in self._assigned_courses]
+        }
+
+    @staticmethod
+    def from_dict(data):
+        instructor = Instructor(
+            data["first_name"],
+            data["last_name"],
+            data["age"],
+            data["sex"],
+            data["birthdate"],
+            data["place_of_birth"]
+        )
+        instructor._id = data["id"]
+        instructor.email = data["email"]
+        instructor.password = data["password"]
+        # Courses will be linked separately after loading
+        return instructor
+
 class Course:
     def __init__(self, course_id, name, start_date, end_date, description, capacity):
         self._course_id = course_id
@@ -142,6 +221,31 @@ class Course:
         else:
             print(f"Course {self._name} is full. Cannot add student {student._first_name} {student._last_name}.")
 
+    def to_dict(self):
+        return {
+            "course_id": self._course_id,
+            "name": self._name,
+            "start_date": self._start_date,
+            "end_date": self._end_date,
+            "description": self._description,
+            "capacity": self._capacity,
+            "enrolled_students": [student._id for student in self._enrolled_students],
+            "instructor": self._instructor._id if self._instructor else None
+        }
+
+    @staticmethod
+    def from_dict(data):
+        course = Course(
+            course_id=data["course_id"],
+            name=data["name"],
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+            description=data["description"],
+            capacity=data["capacity"]
+        )
+        # Students and instructor will be linked separately after loading
+        return course
+
 # Class: Enrollment
 class Enrollment:
     def __init__(self, student, course, payment_status="Pending", enrollment_status="Pending"):
@@ -176,6 +280,26 @@ class Enrollment:
     @staticmethod
     def _generate_enrollment_id():
         return f"ENR-{str(uuid.uuid4())[:8]}"
+
+    def to_dict(self):
+        return {
+            "enrollment_id": self._enrollment_id,
+            "student_id": self._student._id,
+            "course_id": self._course._course_id,
+            "payment_status": self._payment_status,
+            "enrollment_status": self._enrollment_status
+        }
+
+    @staticmethod
+    def from_dict(data):
+        enrollment = Enrollment(
+            student=None,  # Will link separately
+            course=None,   # Will link separately
+            payment_status=data["payment_status"],
+            enrollment_status=data["enrollment_status"]
+        )
+        enrollment._enrollment_id = data["enrollment_id"]
+        return enrollment
 
 # Class: Assignment
 class Assignment:
@@ -215,6 +339,31 @@ class Assignment:
                 f"Description: {self._description}\n"
                 f"Submitted: {len(self._submitted_students)} students\n"
                 f"Graded: {len(self._graded_students)} students")
+    
+    def to_dict(self):
+        """Convert an assignment to a dictionary for JSON serialization."""
+        return {
+            "assignment_id": self._assignment_id,
+            "course_id": self._course._course_id,
+            "due_date": self._due_date,
+            "description": self._description,
+            "submitted_students": {student._id: status for student, status in self._submitted_students.items()},
+            "graded_students": {student._id: grade for student, grade in self._graded_students.items()}
+        }
+
+    @staticmethod
+    def from_dict(data, course):
+        """Recreate an Assignment object from a dictionary."""
+        assignment = Assignment(
+            assignment_id=data["assignment_id"],
+            course=course,
+            due_date=data["due_date"],
+            description=data["description"]
+        )
+        # Submitted and graded students will be linked after loading
+        assignment._submitted_students = data.get("submitted_students", {})
+        assignment._graded_students = data.get("graded_students", {})
+        return assignment
 
 # Class: Grade
 class Grade:
@@ -238,6 +387,26 @@ class Grade:
     @staticmethod
     def _generate_grade_id():
         return f"GRD-{str(uuid.uuid4())[:8]}"
+    
+    def to_dict(self):
+        """Convert a grade to a dictionary for JSON serialization."""
+        return {
+            "grade_id": self._grade_id,
+            "student_id": self._student._id,
+            "course_id": self._course._course_id,
+            "grade": self._grade
+        }
+
+    @staticmethod
+    def from_dict(data, student, course):
+        """Recreate a Grade object from a dictionary."""
+        grade = Grade(
+            student=student,
+            course=course,
+            grade=data["grade"]
+        )
+        grade._grade_id = data["grade_id"]
+        return grade
 
 class UserManager:
     _users = []
@@ -347,6 +516,32 @@ class UserManager:
                 print(f"Instructor with ID {instructor_id} has been removed.")
                 return
         print(f"Instructor with ID {instructor_id} not found.")
+    
+    @staticmethod
+    def load_users():
+        """Load users from JSON."""
+        print("DEBUG: Loading users from users.json...")
+        users_data = load_json("users.json")
+        for user_data in users_data:
+            if user_data["type"] == "Student":
+                user = Student.from_dict(user_data)
+            elif user_data["type"] == "Instructor":
+                user = Instructor.from_dict(user_data)
+            elif user_data["type"] == "Admin":
+                user = PlatformAdmin.from_dict(user_data)
+            else:
+                print(f"DEBUG: Unknown user type: {user_data.get('type')}")
+                continue
+            UserManager._users.append(user)
+        print(f"DEBUG: Loaded {len(UserManager._users)} users.")
+
+    @staticmethod
+    def save_users():
+        """Save users to JSON."""
+        print("DEBUG: Saving users to users.json...")
+        users_data = [user.to_dict() for user in UserManager._users]
+        save_json("users.json", users_data)
+        print("DEBUG: Users saved successfully.")
 
 class PlatformAdmin:
     def __init__(self, admin_id, admin_name):
@@ -358,6 +553,22 @@ class PlatformAdmin:
 
     def __str__(self):
         return f"Admin: {self._first_name} (ID: {self._id})"
+    
+    def to_dict(self):
+        return {
+            "id": self._id,
+            "type": "Admin",
+            "name": self._admin_name,
+            "email": self.email,
+            "password": self.password
+        }
+
+    @staticmethod
+    def from_dict(data):
+        admin = PlatformAdmin(data["id"], data["name"])
+        admin.email = data.get("email", "")
+        admin.password = data.get("password", "")
+        return admin
 
 class CourseManager:
     _courses = []
@@ -470,7 +681,25 @@ class CourseManager:
         print(f"Course ID: {course._course_id}, Course Name: {course._name}")
         for student in course._enrolled_students:
             print(f"Student ID: {student._id}, Student Name: {student._first_name} {student._last_name}")
+    
+    @staticmethod
+    def load_courses():
+        """Load courses from JSON."""
+        print("DEBUG: Loading courses from courses.json...")
+        courses_data = load_json("courses.json")
+        print(f"DEBUG: Found {len(courses_data)} courses in the file.")
+        for course_data in courses_data:
+            course = Course.from_dict(course_data)
+            CourseManager._courses.append(course)
+        print(f"DEBUG: Loaded {len(CourseManager._courses)} courses into memory.")
 
+    @staticmethod
+    def save_courses():
+        """Save courses to JSON."""
+        print("DEBUG: Saving courses to courses.json...")
+        courses_data = [course.to_dict() for course in CourseManager._courses]
+        save_json("courses.json", courses_data)
+        print("DEBUG: Courses saved successfully.")
 
 class EnrollmentManager:
     _enrollments = []
@@ -482,19 +711,20 @@ class EnrollmentManager:
         for enrollment in EnrollmentManager._enrollments:
             if enrollment._student == student and enrollment._course == course:
                 print(f"Student {student._first_name} {student._last_name} is already enrolled or has a pending enrollment in course {course._name}.")
-            return None
+                return None  # Exit if duplicate is found
 
-        # Existing payment method logic
+    # Existing payment method logic
         print("Choose Payment Method:\n1. PayPal\n2. GCash\n3. Debit Card")
         payment_choice = input("Enter payment option (1, 2, or 3): ")
         payment_methods = { "1": "PayPal", "2": "GCash", "3": "Debit Card" }
         payment_status = "Paid" if payment_choice in payment_methods else "Pending"
-        
+
         # Create and add the enrollment
         enrollment = Enrollment(student, course, payment_status)
         EnrollmentManager._enrollments.append(enrollment)
         print(f"Enrollment created: {enrollment}")
         return enrollment
+
 
 
 
@@ -540,7 +770,26 @@ class EnrollmentManager:
         print(f"Enrollments for Course: {course._name}")
         for enrollment in enrollments:
             print(enrollment)
-    
+
+    @staticmethod
+    def load_enrollments():
+        """Load enrollments from JSON."""
+        print("DEBUG: Loading enrollments from enrollments.json...")
+        enrollments_data = load_json("enrollments.json")
+        print(f"DEBUG: Found {len(enrollments_data)} enrollments in the file.")
+        for enrollment_data in enrollments_data:
+            enrollment = Enrollment.from_dict(enrollment_data)
+            EnrollmentManager._enrollments.append(enrollment)
+        print(f"DEBUG: Loaded {len(EnrollmentManager._enrollments)} enrollments into memory.")
+
+    @staticmethod
+    def save_enrollments():
+        """Save enrollments to JSON."""
+        print("DEBUG: Saving enrollments to enrollments.json...")
+        enrollments_data = [enrollment.to_dict() for enrollment in EnrollmentManager._enrollments]
+        save_json("enrollments.json", enrollments_data)
+        print("DEBUG: Enrollments saved successfully.")
+
 class AssignmentManager:
     _assignments = []
 
@@ -637,6 +886,37 @@ class AssignmentManager:
                     print(f"Student Name: {student._first_name} {student._last_name}")
                 print()
 
+    @staticmethod
+    def load_assignments():
+        """Load assignments from JSON."""
+        print("DEBUG: Loading assignments from assignments.json...")
+        assignments_data = load_json("assignments.json")
+        print(f"DEBUG: Found {len(assignments_data)} assignments in the file.")
+        for assignment_data in assignments_data:
+            course = CourseManager.get_course_by_id(assignment_data["course_id"])
+            if not course:
+                print(f"DEBUG: Course ID {assignment_data['course_id']} not found. Skipping assignment.")
+                continue
+            assignment = Assignment.from_dict(assignment_data, course)
+            assignment._submitted_students = {
+                UserManager.find_user_by_id(student_id): status
+                for student_id, status in assignment_data.get("submitted_students", {}).items()
+            }
+            assignment._graded_students = {
+                UserManager.find_user_by_id(student_id): grade
+                for student_id, grade in assignment_data.get("graded_students", {}).items()
+            }
+            AssignmentManager._assignments.append(assignment)
+        print(f"DEBUG: Loaded {len(AssignmentManager._assignments)} assignments into memory.")
+
+    @staticmethod
+    def save_assignments():
+        """Save assignments to JSON."""
+        print("DEBUG: Saving assignments to assignments.json...")
+        assignments_data = [assignment.to_dict() for assignment in AssignmentManager._assignments]
+        save_json("assignments.json", assignments_data)
+        print("DEBUG: Assignments saved successfully.")
+
 class GradeManager:
     _grades = []
 
@@ -681,6 +961,30 @@ class GradeManager:
                 GradeManager.assign_grade(student, course, grade_value)  # Reuse assign_grade method
             except ValueError:
                 print(f"Invalid input. Skipping {student._first_name} {student._last_name}.")
+    
+    @staticmethod
+    def load_grades():
+        """Load grades from JSON."""
+        print("DEBUG: Loading grades from grades.json...")
+        grades_data = load_json("grades.json")
+        print(f"DEBUG: Found {len(grades_data)} grades in the file.")
+        for grade_data in grades_data:
+            student = UserManager.find_user_by_id(grade_data["student_id"])
+            course = CourseManager.get_course_by_id(grade_data["course_id"])
+            if not student or not course:
+                print(f"DEBUG: Missing data for grade ID {grade_data['grade_id']}. Skipping.")
+                continue
+            grade = Grade.from_dict(grade_data, student, course)
+            GradeManager._grades.append(grade)
+        print(f"DEBUG: Loaded {len(GradeManager._grades)} grades into memory.")
+
+    @staticmethod
+    def save_grades():
+        """Save grades to JSON."""
+        print("DEBUG: Saving grades to grades.json...")
+        grades_data = [grade.to_dict() for grade in GradeManager._grades]
+        save_json("grades.json", grades_data)
+        print("DEBUG: Grades saved successfully.")
 
 def general_menu():
     while True:
@@ -984,7 +1288,47 @@ def admin_menu(admin):
 
 def main():
     print("Welcome to the E-Learning Platform!")
-    general_menu()
+
+    # Debugging: Check the current working directory and save folder
+    print(f"DEBUG: Current Working Directory: {os.getcwd()}")
+    print(f"DEBUG: JSON Save Folder: {SAVE_FOLDER}")
+
+    # Debugging: Check JSON file names and intended paths
+    print("\nDEBUG: JSON Files:")
+    print(f"Users File: {os.path.join(SAVE_FOLDER, 'users.json')}")
+    print(f"Courses File: {os.path.join(SAVE_FOLDER, 'courses.json')}")
+    print(f"Enrollments File: {os.path.join(SAVE_FOLDER, 'enrollments.json')}")
+    print(f"Assignments File: {os.path.join(SAVE_FOLDER, 'assignments.json')}")
+    print(f"Grades File: {os.path.join(SAVE_FOLDER, 'grades.json')}")
+
+    # Load data at the beginning
+    print("\nDEBUG: Loading Data...")
+    UserManager.load_users()
+    CourseManager.load_courses()
+    EnrollmentManager.load_enrollments()
+    AssignmentManager.load_assignments()
+    GradeManager.load_grades()
+
+    # Debugging: Confirmation that loading is complete
+    print("\nDEBUG: Data Loaded Successfully.")
+
+    try:
+        general_menu()  # Main program logic (this handles menu inputs)
+    finally:
+        # Save data before exiting
+        print("\nDEBUG: Saving Data...")
+        UserManager.save_users()
+        CourseManager.save_courses()
+        EnrollmentManager.save_enrollments()
+        AssignmentManager.save_assignments()
+        GradeManager.save_grades()
+        print("DEBUG: Data Saved Successfully.")
+
+    print("Exiting program. Goodbye!")
+
+
+
+
 
 # Entry Point
 if __name__ == "__main__":
