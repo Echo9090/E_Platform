@@ -3,31 +3,48 @@ import uuid
 import json
 import os
 
-
-SAVE_FOLDER = r"C:\Users\Cholo\OneDrive\Desktop\Code_Activities\CS_06\Case_Study_3\Case3_json"
+SAVE_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Case3_json")
 
 # Ensure the folder exists
 if not os.path.exists(SAVE_FOLDER):
     os.makedirs(SAVE_FOLDER)
+print("Save folder initialized at:", SAVE_FOLDER)
+
 
 print("Current Working Directory:", os.getcwd())
 
 
 def load_json(filename):
-    """Load JSON data from a file in SAVE_FOLDER."""
+    """
+    Load JSON data from a file in SAVE_FOLDER.
+    Handles file not existing or corrupted JSON gracefully.
+    """
     filepath = os.path.join(SAVE_FOLDER, filename)
-    if os.path.exists(filepath):
+    if not os.path.exists(filepath):
+        print(f"DEBUG: {filename} not found. Returning an empty list.")
+        return []
+    try:
         with open(filepath, "r") as file:
             return json.load(file)
-    return []
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Failed to decode {filename}. Error: {e}")
+        return []
+    except Exception as e:
+        print(f"ERROR: Unexpected error loading {filename}. Error: {e}")
+        return []
 
 def save_json(filename, data):
-    """Save JSON data to a file in SAVE_FOLDER."""
+    """
+    Save JSON data to a file in SAVE_FOLDER.
+    Handles any file-writing issues gracefully.
+    """
     filepath = os.path.join(SAVE_FOLDER, filename)
-    print(f"Saving data to {filepath}...")  # Debug log
-    with open(filepath, "w") as file:
-        json.dump(data, file, indent=4)
-    print(f"Data successfully saved to {filepath}.")  # Debug log
+    try:
+        with open(filepath, "w") as file:
+            json.dump(data, file, indent=4)
+        print(f"DEBUG: Data successfully saved to {filepath}.")
+    except Exception as e:
+        print(f"ERROR: Failed to save data to {filename}. Error: {e}")
 
 
 
@@ -52,6 +69,22 @@ class Person(ABC):
 
     def __str__(self):
         return f"ID: {self._id}, Name: {self._first_name} {self._last_name}"
+    
+    def to_dict(self):
+        """
+        Converts the common Person attributes into a dictionary.
+        """
+        return {
+            "id": self._id,
+            "first_name": self._first_name,
+            "last_name": self._last_name,
+            "age": self._age,
+            "sex": self._sex,
+            "birthdate": self._birthdate,
+            "place_of_birth": self._place_of_birth,
+            "email": self.email,
+            "password": self.password,
+        }
 
 # Subclass: Student
 class Student(Person):
@@ -83,17 +116,22 @@ class Student(Person):
               f"Password: {self.password}\n"
               f"Enrolled Courses: {enrolled_courses}")
     
-    def to_dict(self):
-        base_dict = super().to_dict()
-        base_dict.update({
-            "enrolled_courses": [course._course_id for course in self._enrolled_courses]
-        })
-        return base_dict
-
     # New JSON Deserialization Method
+    def to_dict(self):
+        """
+        Converts the Student object into a dictionary for JSON serialization.
+        """
+        return {
+            **super().to_dict(),
+            "type": "Student",
+            "enrolled_courses": [course._course_id for course in self._enrolled_courses]
+        }
+
     @staticmethod
     def from_dict(data):
-        """Create a Student object from a dictionary."""
+        """
+        Rebuilds a Student object from a dictionary.
+        """
         student = Student(
             data["first_name"],
             data["last_name"],
@@ -103,26 +141,40 @@ class Student(Person):
             data["place_of_birth"]
         )
         student._id = data["id"]
-        student.email = data.get("email", "")  # Provide default if missing
-        student.password = data.get("password", "")  # Provide default if missing
-        # Enrolled courses will be linked separately after loading
+        student.email = data.get("email", "")
+        student.password = data.get("password", "")
+        student._enrolled_courses = []  # Link courses after loading
         return student
+    
+    @classmethod
+    def motivation_assignment(cls):
+        """Motivation related to assignments."""
+        print("\n📘 Don't procrastinate! Start your assignment today and give it your best shot!")
 
-    def to_dict(self):
-        """Convert a Student object to a dictionary."""
-        return {
-            "id": self._id,
-            "type": "Student",
-            "first_name": self._first_name,
-            "last_name": self._last_name,
-            "age": self._age,
-            "sex": self._sex,
-            "birthdate": self._birthdate,
-            "place_of_birth": self._place_of_birth,
-            "email": getattr(self, "email", ""),  # Safeguard if email is missing
-            "password": getattr(self, "password", ""),  # Safeguard if password is missing
-            "enrolled_courses": [course._course_id for course in self._enrolled_courses]
-        }
+    @classmethod
+    def motivation_exams(cls):
+        """Motivation related to exams."""
+        print("\n📖 Study hard, but don't forget to take breaks. You've got this!")
+
+    @classmethod
+    def motivation_grades(cls):
+        """Motivation related to grades."""
+        print("\n🎓 Grades are not the destination but part of the journey. Keep learning!")
+
+    @classmethod
+    def motivation_progress(cls):
+        """Motivation about personal progress."""
+        print("\n🚀 Every day is a new chance to improve yourself. Take it one step at a time!")
+
+    @classmethod
+    def motivation_balance(cls):
+        """Motivation about balancing studies and personal life."""
+        print("\n🧘‍♀️ Balance is key! Don't forget to take care of your mental and physical health.")
+
+    @classmethod
+    def motivation_teamwork(cls):
+        """Motivation about teamwork and collaboration."""
+        print("\n🤝 Collaboration makes us stronger. Share, learn, and grow together!")
 
 # Subclass: Instructor
 class Instructor(Person):
@@ -132,7 +184,9 @@ class Instructor(Person):
         self._assigned_courses = []
 
     def assign_course(self, course):
-        self._assigned_courses.append(course)
+        if course not in self._assigned_courses:
+            self._assigned_courses.append(course)
+
 
     def view_courses(self):
         return [course.name for course in self._assigned_courses]
@@ -155,35 +209,63 @@ class Instructor(Person):
               f"Assigned Courses: {assigned_courses}")
     
     def to_dict(self):
+        """
+        Converts the Instructor object into a dictionary for JSON serialization.
+        """
         return {
-            "id": self._id,
+            **super().to_dict(),
             "type": "Instructor",
-            "first_name": self._first_name,
-            "last_name": self._last_name,
-            "age": self._age,
-            "sex": self._sex,
-            "birthdate": self._birthdate,
-            "place_of_birth": self._place_of_birth,
-            "email": self.email,
-            "password": self.password,
-            "assigned_courses": [course._course_id for course in self._assigned_courses]
+            "assigned_courses": [course._course_id for course in self._assigned_courses],
         }
 
     @staticmethod
     def from_dict(data):
+        """
+        Rebuilds an Instructor object from a dictionary.
+        """
         instructor = Instructor(
             data["first_name"],
             data["last_name"],
             data["age"],
             data["sex"],
             data["birthdate"],
-            data["place_of_birth"]
+            data["place_of_birth"],
         )
         instructor._id = data["id"]
-        instructor.email = data["email"]
-        instructor.password = data["password"]
-        # Courses will be linked separately after loading
+        instructor.email = data.get("email", "")
+        instructor.password = data.get("password", "")
+        instructor._assigned_courses = []  # Link courses after loading
         return instructor
+    
+    @classmethod
+    def motivation_teaching(cls):
+        """Motivation about the teaching profession."""
+        print("\n📚 Teaching is an art. Your knowledge empowers generations!")
+
+    @classmethod
+    def motivation_students(cls):
+        """Motivation about working with students."""
+        print("\n🎓 Every student you guide today will make a difference tomorrow. Keep inspiring!")
+
+    @classmethod
+    def motivation_grading(cls):
+        """Motivation about grading."""
+        print("\n✏️ Fair and constructive feedback helps students grow. You're shaping futures!")
+
+    @classmethod
+    def motivation_research(cls):
+        """Motivation about professional development and research."""
+        print("\n🔬 Keep innovating! Your work contributes to the ever-growing field of knowledge.")
+
+    @classmethod
+    def motivation_self_care(cls):
+        """Motivation about self-care for instructors."""
+        print("\n🧘 Teaching is rewarding but challenging. Remember to recharge and prioritize yourself.")
+
+    @classmethod
+    def motivation_collaboration(cls):
+        """Motivation about collaboration with colleagues."""
+        print("\n🤝 Collaboration among educators sparks creativity and innovation. Share your ideas!")
 
 class Course:
     def __init__(self, course_id, name, start_date, end_date, description, capacity):
@@ -222,6 +304,9 @@ class Course:
             print(f"Course {self._name} is full. Cannot add student {student._first_name} {student._last_name}.")
 
     def to_dict(self):
+        """
+        Converts the Course object into a dictionary for JSON serialization.
+        """
         return {
             "course_id": self._course_id,
             "name": self._name,
@@ -230,21 +315,37 @@ class Course:
             "description": self._description,
             "capacity": self._capacity,
             "enrolled_students": [student._id for student in self._enrolled_students],
-            "instructor": self._instructor._id if self._instructor else None
+            "instructor": self._instructor._id if self._instructor else None,
         }
 
     @staticmethod
     def from_dict(data):
+        """
+        Rebuilds a Course object from a dictionary.
+        """
         course = Course(
             course_id=data["course_id"],
             name=data["name"],
             start_date=data["start_date"],
             end_date=data["end_date"],
             description=data["description"],
-            capacity=data["capacity"]
+            capacity=data["capacity"],
         )
-        # Students and instructor will be linked separately after loading
+        # Enrolled students and instructor will be linked separately
         return course
+
+    def __str__(self):
+        instructor_name = f"{self._instructor._first_name} {self._instructor._last_name}" if self._instructor else "None"
+        return (
+            f"Course ID: {self._course_id}\n"
+            f"Name: {self._name}\n"
+            f"Start Date: {self._start_date}\n"
+            f"End Date: {self._end_date}\n"
+            f"Description: {self._description}\n"
+            f"Capacity: {self._capacity}\n"
+            f"Instructor: {instructor_name}\n"
+            f"Enrolled Students: {len(self._enrolled_students)} / {self._capacity}"
+        )
 
 # Class: Enrollment
 class Enrollment:
@@ -277,60 +378,73 @@ class Enrollment:
                 f"Course: {self._course._name}\nPayment Status: {self._payment_status}\n"
                 f"Enrollment Status: {self._enrollment_status}")
 
-    @staticmethod
-    def _generate_enrollment_id():
-        return f"ENR-{str(uuid.uuid4())[:8]}"
-
     def to_dict(self):
+        """
+        Converts the Enrollment object into a dictionary for JSON serialization.
+        """
         return {
             "enrollment_id": self._enrollment_id,
-            "student_id": self._student._id,
-            "course_id": self._course._course_id,
+            "student_id": self._student._id if self._student else None,
+            "course_id": self._course._course_id if self._course else None,
             "payment_status": self._payment_status,
-            "enrollment_status": self._enrollment_status
+            "enrollment_status": self._enrollment_status,
         }
 
     @staticmethod
     def from_dict(data):
+        """
+        Rebuilds an Enrollment object from a dictionary.
+        Student and Course will be linked separately.
+        """
         enrollment = Enrollment(
-            student=None,  # Will link separately
-            course=None,   # Will link separately
+            student=None,  # Link later
+            course=None,   # Link later
             payment_status=data["payment_status"],
-            enrollment_status=data["enrollment_status"]
+            enrollment_status=data["enrollment_status"],
         )
         enrollment._enrollment_id = data["enrollment_id"]
         return enrollment
+    
+    @staticmethod
+    def _generate_enrollment_id():
+        return f"ENR-{str(uuid.uuid4())[:8]}"
 
 # Class: Assignment
 class Assignment:
-    def __init__(self, assignment_id, course, due_date, description):
+    def __init__(self, assignment_id, course, due_date, description, max_grade):
         self._assignment_id = assignment_id
         self._course = course
         self._due_date = due_date
         self._description = description
-        self._submitted_students = {}
+        self._max_grade = max_grade
+        self._submitted_students = {}   
         self._graded_students = {}
 
     def submit(self, student):
+        """
+        Allows a student to submit an assignment.
+        """
         if student not in self._submitted_students:
             self._submitted_students[student] = "Submitted"
             print(f"Assignment submitted by {student._first_name} {student._last_name}.")
         else:
-            print(f"{student._first_name} {student._last_name} has already submitted this assignment.")
+            print(f"Duplicate Submission: {student._first_name} {student._last_name} has already submitted this assignment.")
 
-    def grade(self, student, grade, max_grade):
-        """Grades a student's submission with validation."""
+
+    def grade(self, student, grade):
+        """
+        Grades a student's submission, ensuring it doesn't exceed the max grade.
+        """
         if student not in self._submitted_students:
-            print(f"{student._first_name} {student._last_name} has not submitted this assignment.")
+            print(f"Error: {student._first_name} {student._last_name} has not submitted this assignment.")
             return
 
-        if grade > max_grade:
-            print(f"Error: Grade {grade} exceeds the maximum grade of {max_grade}.")
+        if grade > self._max_grade:
+            print(f"Error: Grade {grade} exceeds the maximum grade of {self._max_grade}.")
             return
 
-        # Update or add the grade
         self._graded_students[student] = grade
-        print(f"{student._first_name} {student._last_name} has been graded {grade}/{max_grade} for assignment {self._assignment_id}.")
+        print(f"{student._first_name} {student._last_name} has been graded {grade}/{self._max_grade} for assignment {self._assignment_id}.") 
 
     def __str__(self):
         return (f"Assignment ID: {self._assignment_id}\n"
@@ -341,38 +455,46 @@ class Assignment:
                 f"Graded: {len(self._graded_students)} students")
     
     def to_dict(self):
-        """Convert an assignment to a dictionary for JSON serialization."""
+        """
+        Converts the Assignment object into a dictionary for JSON serialization.
+        """
         return {
             "assignment_id": self._assignment_id,
-            "course_id": self._course._course_id,
+            "course_id": self._course._course_id if self._course else None,
             "due_date": self._due_date,
             "description": self._description,
+            "max_grade": self._max_grade,  # Include max grade
             "submitted_students": {student._id: status for student, status in self._submitted_students.items()},
-            "graded_students": {student._id: grade for student, grade in self._graded_students.items()}
+            "graded_students": {student._id: grade for student, grade in self._graded_students.items()},
         }
+
 
     @staticmethod
     def from_dict(data, course):
-        """Recreate an Assignment object from a dictionary."""
+        """
+        Rebuilds an Assignment object from a dictionary.
+        Submitted and graded students will be linked later.
+        """
+        max_grade = data.get("max_grade", 10.0)  # Default max grade to 10.0 if not present
         assignment = Assignment(
             assignment_id=data["assignment_id"],
             course=course,
             due_date=data["due_date"],
-            description=data["description"]
+            description=data["description"],
+            max_grade=max_grade  # Pass max grade to the constructor
         )
-        # Submitted and graded students will be linked after loading
-        assignment._submitted_students = data.get("submitted_students", {})
-        assignment._graded_students = data.get("graded_students", {})
+        assignment._submitted_students = {}  # Link later
+        assignment._graded_students = {}    # Link later
         return assignment
 
 # Class: Grade
 class Grade:
-    def __init__(self, student, course, grade):
+    def __init__(self, student, course, grade_value):
         self._grade_id = self._generate_grade_id()
         self._student = student
         self._course = course
-        self._grade = grade
-        
+        self._grade_value = grade_value  # Use the passed grade argument
+
 
     def get_grade(self):
         return self._grade
@@ -389,24 +511,37 @@ class Grade:
         return f"GRD-{str(uuid.uuid4())[:8]}"
     
     def to_dict(self):
-        """Convert a grade to a dictionary for JSON serialization."""
+        """
+        Converts the Grade object into a dictionary for JSON serialization.
+        """
         return {
             "grade_id": self._grade_id,
-            "student_id": self._student._id,
-            "course_id": self._course._course_id,
-            "grade": self._grade
+            "student_id": self._student._id if self._student else None,
+            "course_id": self._course._course_id if self._course else None,
+            "grade_value": self._grade_value,
         }
 
     @staticmethod
-    def from_dict(data, student, course):
-        """Recreate a Grade object from a dictionary."""
+    def from_dict(data):
+        """
+        Rebuilds a Grade object from a dictionary.
+        Student and Course will be linked separately.
+        """
         grade = Grade(
-            student=student,
-            course=course,
-            grade=data["grade"]
+            student=None,  # Link later
+            course=None,   # Link later
+            grade_value=data["grade_value"],
         )
         grade._grade_id = data["grade_id"]
         return grade
+
+    def __str__(self):
+        return (
+            f"Grade ID: {self._grade_id}\n"
+            f"Student: {self._student._first_name} {self._student._last_name} ({self._student._id})\n"
+            f"Course: {self._course._name} ({self._course._course_id})\n"
+            f"Grade: {self._grade_value}"
+        )
 
 class UserManager:
     _users = []
@@ -499,41 +634,157 @@ class UserManager:
     
     @staticmethod
     def remove_student(student_id):
-        """Removes a student by their ID."""
+        """
+        Removes a student by their ID and updates JSON files.
+        """
         for user in UserManager._users:
             if isinstance(user, Student) and user._id == student_id:
                 UserManager._users.remove(user)
                 print(f"Student with ID {student_id} has been removed.")
+                UserManager.save_users()
+                CourseManager.save_courses()  # Update courses JSON
                 return
         print(f"Student with ID {student_id} not found.")
 
+
     @staticmethod
     def remove_instructor(instructor_id):
-        """Removes an instructor by their ID."""
+        """
+        Removes an instructor by their ID and updates JSON files.
+        """
         for user in UserManager._users:
             if isinstance(user, Instructor) and user._id == instructor_id:
                 UserManager._users.remove(user)
                 print(f"Instructor with ID {instructor_id} has been removed.")
+                UserManager.save_users()
+                CourseManager.save_courses()  # Update courses JSON
                 return
         print(f"Instructor with ID {instructor_id} not found.")
+
+
+    @staticmethod
+    def drop_student_menu():
+        """
+        Handles dropping a student.
+        """
+        print("\n--- Drop Student Menu ---")
+        print("1. Drop from Course")
+        print("2. Delete Entirely")
+        choice = input("Enter your choice (1 or 2): ").strip()
+
+        if choice == "1":
+            UserManager.drop_student_from_course()
+        elif choice == "2":
+            student_id = input("Enter Student ID to delete: ").strip()
+            UserManager.remove_student(student_id)
+        else:
+            print("Invalid choice. Returning to the main menu.")
+
+
+    @staticmethod
+    def drop_instructor_menu():
+        """
+        Handles dropping an instructor.
+        """
+        print("\n--- Drop Instructor Menu ---")
+        print("1. Drop from Course")
+        print("2. Delete Entirely")
+        choice = input("Enter your choice (1 or 2): ").strip()
+
+        if choice == "1":
+            UserManager.drop_instructor_from_course()
+        elif choice == "2":
+            instructor_id = input("Enter Instructor ID to delete: ").strip()
+            UserManager.remove_instructor(instructor_id)
+        else:
+            print("Invalid choice. Returning to the main menu.")
+
+
+    @staticmethod
+    def drop_student_from_course():
+        """
+        Allows admin to drop a student from a specific course.
+        """
+        course_id = input("Enter Course ID: ").strip()
+        course = CourseManager.get_course_by_id(course_id)
+
+        if not course:
+            print("Course not found.")
+            return
+
+        if not course._enrolled_students:
+            print(f"No students are enrolled in course {course._name}.")
+            return
+
+        print(f"\n--- Students in Course: {course._name} ---")
+        for student in course._enrolled_students:
+            print(f"Student ID: {student._id}, Name: {student._first_name} {student._last_name}")
+
+        student_id = input("Enter Student ID to drop: ").strip()
+        student = UserManager.find_user_by_id(student_id)
+
+        if not student or student not in course._enrolled_students:
+            print("Student not found in this course.")
+        else:
+            course._enrolled_students.remove(student)
+            student._enrolled_courses.remove(course)
+            print(f"Student {student._first_name} {student._last_name} has been dropped from course {course._name}.")
+    
+    @staticmethod
+    def drop_instructor_from_course():
+        """
+        Allows admin to unassign an instructor from a course.
+        """
+        course_id = input("Enter Course ID: ").strip()
+        course = CourseManager.get_course_by_id(course_id)
+
+        if not course:
+            print("Course not found.")
+            return
+
+        if not course._instructor:
+            print(f"No instructor is assigned to the course {course._name}.")
+            return
+
+        print(f"Instructor {course._instructor._first_name} {course._instructor._last_name} is assigned to this course.")
+        confirmation = input("Do you want to unassign this instructor? (yes/no): ").strip().lower()
+
+        if confirmation == "yes":
+            instructor = course._instructor
+            course._instructor = None
+            instructor._assigned_courses.remove(course)
+            print(f"Instructor {instructor._first_name} {instructor._last_name} has been unassigned from course {course._name}.")
+        else:
+            print("Operation cancelled.")
+
+
     
     @staticmethod
     def load_users():
-        """Load users from JSON."""
-        print("DEBUG: Loading users from users.json...")
+        """
+        Load users from JSON and link assigned courses for instructors.
+        """
         users_data = load_json("users.json")
         for user_data in users_data:
             if user_data["type"] == "Student":
-                user = Student.from_dict(user_data)
+                student = Student.from_dict(user_data)
+                UserManager._users.append(student)
             elif user_data["type"] == "Instructor":
-                user = Instructor.from_dict(user_data)
+                instructor = Instructor.from_dict(user_data)
+                UserManager._users.append(instructor)
             elif user_data["type"] == "Admin":
-                user = PlatformAdmin.from_dict(user_data)
-            else:
-                print(f"DEBUG: Unknown user type: {user_data.get('type')}")
-                continue
-            UserManager._users.append(user)
-        print(f"DEBUG: Loaded {len(UserManager._users)} users.")
+                admin = PlatformAdmin.from_dict(user_data)
+                UserManager._users.append(admin)
+
+        # Link assigned courses for instructors
+        for user in UserManager._users:
+            if isinstance(user, Instructor):
+                user._assigned_courses = [
+                    CourseManager.get_course_by_id(course_id)
+                    for course_id in user_data.get("assigned_courses", [])
+                    if CourseManager.get_course_by_id(course_id)
+                ]
+
 
     @staticmethod
     def save_users():
@@ -553,6 +804,24 @@ class PlatformAdmin:
 
     def __str__(self):
         return f"Admin: {self._first_name} (ID: {self._id})"
+    
+    @staticmethod
+    def drop_user_menu():
+        """
+        Menu to handle dropping students or instructors.
+        """
+        print("\n--- Drop User Menu ---")
+        print("1. Drop Student")
+        print("2. Drop Instructor")
+        choice = input("Enter your choice (1 or 2): ").strip()
+
+        if choice == "1":
+            UserManager.drop_student_menu()
+        elif choice == "2":
+            UserManager.drop_instructor_menu()
+        else:
+            print("Invalid choice. Returning to the main menu.")
+
     
     def to_dict(self):
         return {
@@ -609,15 +878,35 @@ class CourseManager:
             print(course)
     
     @staticmethod
-    def view_available_courses():
-        """Displays courses not assigned to any instructor."""
-        available_courses = [course for course in CourseManager._courses if course._instructor is None]
+    def view_available_courses(student):
+        """
+        Displays courses that the student is not already enrolled in.
+        """
+        available_courses = [
+            course for course in CourseManager._courses
+            if student not in course._enrolled_students
+        ]
+
         if not available_courses:
             print("No available courses at the moment.")
             return
-        print("\n--- Available Courses ---")
+        
+    @staticmethod
+    def view_available_courses_for_instructor():
+        """
+        Displays courses that have no assigned instructor.
+        """
+        available_courses = [course for course in CourseManager._courses if course._instructor is None]
+
+        if not available_courses:
+            print("No available courses at the moment.")
+            return
+
+        print("\n--- Available Courses (Unassigned) ---")
         for course in available_courses:
             print(course)
+
+
     @staticmethod
     def apply_to_course(instructor, course):
         """Allows an instructor to apply for a course if it has no assigned instructor."""
@@ -684,22 +973,39 @@ class CourseManager:
     
     @staticmethod
     def load_courses():
-        """Load courses from JSON."""
-        print("DEBUG: Loading courses from courses.json...")
+        """
+        Load courses from JSON and link instructors and students.
+        """
         courses_data = load_json("courses.json")
-        print(f"DEBUG: Found {len(courses_data)} courses in the file.")
+        CourseManager._courses = []  # Clear existing courses to avoid duplication
+
         for course_data in courses_data:
+            # Create Course objects
             course = Course.from_dict(course_data)
             CourseManager._courses.append(course)
-        print(f"DEBUG: Loaded {len(CourseManager._courses)} courses into memory.")
+
+            # Link instructor
+            if course_data["instructor"]:
+                instructor = UserManager.find_user_by_id(course_data["instructor"])
+                if instructor:
+                    course._instructor = instructor
+                    if course not in instructor._assigned_courses:
+                        instructor._assigned_courses.append(course)
+
+            # Link enrolled students
+            course._enrolled_students = [
+                UserManager.find_user_by_id(student_id)
+                for student_id in course_data["enrolled_students"]
+                if UserManager.find_user_by_id(student_id)
+            ]
 
     @staticmethod
     def save_courses():
-        """Save courses to JSON."""
-        print("DEBUG: Saving courses to courses.json...")
+        """
+        Save all courses to JSON.
+        """
         courses_data = [course.to_dict() for course in CourseManager._courses]
         save_json("courses.json", courses_data)
-        print("DEBUG: Courses saved successfully.")
 
 class EnrollmentManager:
     _enrollments = []
@@ -724,9 +1030,6 @@ class EnrollmentManager:
         EnrollmentManager._enrollments.append(enrollment)
         print(f"Enrollment created: {enrollment}")
         return enrollment
-
-
-
 
     @staticmethod
     def approve_enrollment(enrollment_id):
@@ -773,36 +1076,71 @@ class EnrollmentManager:
 
     @staticmethod
     def load_enrollments():
-        """Load enrollments from JSON."""
-        print("DEBUG: Loading enrollments from enrollments.json...")
+        """
+        Load enrollments from JSON and link students and courses.
+        Ensure student and course relationships are updated.
+        """
         enrollments_data = load_json("enrollments.json")
-        print(f"DEBUG: Found {len(enrollments_data)} enrollments in the file.")
+        print(f"DEBUG: Loading {len(enrollments_data)} enrollments from enrollments.json")
+
+        EnrollmentManager._enrollments = []  # Clear existing enrollments to avoid duplication
+
         for enrollment_data in enrollments_data:
+            student = UserManager.find_user_by_id(enrollment_data["student_id"])
+            course = CourseManager.get_course_by_id(enrollment_data["course_id"])
+
+            if not student or not course:
+                print(f"WARNING: Skipping enrollment {enrollment_data['enrollment_id']} due to missing student or course.")
+                continue
+
+            # Create and link enrollment
             enrollment = Enrollment.from_dict(enrollment_data)
+            enrollment._student = student
+            enrollment._course = course
             EnrollmentManager._enrollments.append(enrollment)
-        print(f"DEBUG: Loaded {len(EnrollmentManager._enrollments)} enrollments into memory.")
+
+            # Update relationships
+            if course not in student._enrolled_courses:
+                student._enrolled_courses.append(course)  # Link course to student
+            if student not in course._enrolled_students:
+                course._enrolled_students.append(student)  # Link student to course
+
+            print(f"DEBUG: Enrollment {enrollment._enrollment_id} linked: {student._id} -> {course._course_id}")
+
 
     @staticmethod
     def save_enrollments():
-        """Save enrollments to JSON."""
-        print("DEBUG: Saving enrollments to enrollments.json...")
+        """
+        Save all enrollments to JSON.
+        """
         enrollments_data = [enrollment.to_dict() for enrollment in EnrollmentManager._enrollments]
+        print(f"DEBUG: Saving {len(enrollments_data)} enrollments to enrollments.json")
+        for enrollment in enrollments_data:
+            print(f"DEBUG: {enrollment}")  # Log each enrollment
         save_json("enrollments.json", enrollments_data)
-        print("DEBUG: Enrollments saved successfully.")
 
 class AssignmentManager:
     _assignments = []
 
     @staticmethod
-    def add_assignment(course_id, assignment_id, due_date, description):
+    def add_assignment(course_id, assignment_id, due_date, description, max_grade):
+        """
+        Add an assignment to a course with a specified maximum grade.
+        """
+        if max_grade <= 0:
+            print("Max grade must be greater than 0.")
+            return
+
         course = CourseManager.get_course_by_id(course_id)
         if not course:
             print("Course not found. Assignment not created.")
             return
 
-        assignment = Assignment(assignment_id, course, due_date, description)
+        assignment = Assignment(assignment_id, course, due_date, description, max_grade)
         AssignmentManager._assignments.append(assignment)
         print(f"Assignment added:\n{assignment}")
+
+
 
     @staticmethod
     def submit_assignment(student, assignment_id):
@@ -813,19 +1151,22 @@ class AssignmentManager:
             print("Assignment not found.")
 
     @staticmethod
-    def grade_assignment(assignment_id, student_id, grade, max_grade):
-        """Grades a student's submitted assignment with max grade validation."""
+    def grade_assignment(assignment_id, student_id, grade):
+        """
+        Grade a student's assignment using the assignment's predefined max grade.
+        """
         assignment = AssignmentManager.get_assignment_by_id(assignment_id)
         if not assignment:
-                print("Assignment not found.")
-                return
+            print("Assignment not found.")
+            return
 
         student = UserManager.find_user_by_id(student_id)
         if not student or not isinstance(student, Student):
-                print("Student not found.")
-                return
+            print("Student not found.")
+            return
 
-        assignment.grade(student, grade, max_grade)
+        assignment.grade(student, grade)
+
 
     @staticmethod
     def get_assignment_by_id(assignment_id):
@@ -865,7 +1206,10 @@ class AssignmentManager:
     
     @staticmethod
     def view_passed_assignments(course, passing_grade=5):
-        """Displays all assignments and the students who passed them in a specific course."""
+        """
+        Displays all assignments and the students who passed them in a specific course.
+        Highlights ungraded submissions for the instructor's attention.
+        """
         assignments_for_course = [assignment for assignment in AssignmentManager._assignments if assignment._course == course]
 
         if not assignments_for_course:
@@ -877,56 +1221,113 @@ class AssignmentManager:
 
         for assignment in assignments_for_course:
             print(f"Assignment ID: {assignment._assignment_id}, Description: {assignment._description}")
+
+            # Identify passed students
             passed_students = [student for student, grade in assignment._graded_students.items() if grade is not None and grade >= passing_grade]
 
+            # Identify ungraded students
+            ungraded_students = [student for student in assignment._submitted_students.keys() if student not in assignment._graded_students]
+
+            if ungraded_students:
+                print("\nWarning: The following students have submitted but not yet been graded:")
+                for student in ungraded_students:
+                    print(f"Student Name: {student._first_name} {student._last_name}")
+
             if not passed_students:
-                print("No students passed this assignment.\n")
+                print("\nNo students passed this assignment.\n")
             else:
+                print("\nPassed Students:")
                 for student in passed_students:
                     print(f"Student Name: {student._first_name} {student._last_name}")
                 print()
+    
+    @staticmethod
+    def view_all_assignments(course, student=None):
+        """
+        Displays all assignments for a specific course and optionally shows the passing status for a student.
+        """
+        assignments_for_course = [
+            assignment for assignment in AssignmentManager._assignments if assignment._course == course
+        ]
+        if not assignments_for_course:
+            print(f"No assignments found for course: {course._name}")
+            return
+
+        print(f"\n--- Assignments for Course: {course._name} ---")
+        for assignment in assignments_for_course:
+            if student:
+                passed_status = (
+                    "Passed" if student in assignment._graded_students and assignment._graded_students[student] >= 5 else "Not Passed"
+                )
+                print(
+                    f"Assignment ID: {assignment._assignment_id}, Due Date: {assignment._due_date}, "
+                    f"Passed: {passed_status}, Description: {assignment._description}"
+                )
+            else:
+                print(
+                    f"Assignment ID: {assignment._assignment_id}, Due Date: {assignment._due_date}, "
+                    f"Description: {assignment._description}"
+                )
+
+
 
     @staticmethod
     def load_assignments():
-        """Load assignments from JSON."""
-        print("DEBUG: Loading assignments from assignments.json...")
+        """
+        Load assignments from JSON and link courses, students, and grades.
+        """
         assignments_data = load_json("assignments.json")
-        print(f"DEBUG: Found {len(assignments_data)} assignments in the file.")
         for assignment_data in assignments_data:
             course = CourseManager.get_course_by_id(assignment_data["course_id"])
             if not course:
-                print(f"DEBUG: Course ID {assignment_data['course_id']} not found. Skipping assignment.")
+                print(f"WARNING: Skipping assignment {assignment_data['assignment_id']} due to missing course.")
                 continue
+
+            if "max_grade" not in assignment_data:
+                print(f"ERROR: Assignment {assignment_data['assignment_id']} is missing 'max_grade'. Skipping.")
+                continue
+
             assignment = Assignment.from_dict(assignment_data, course)
+
+            # Link submitted students
             assignment._submitted_students = {
                 UserManager.find_user_by_id(student_id): status
-                for student_id, status in assignment_data.get("submitted_students", {}).items()
+                for student_id, status in assignment_data["submitted_students"].items()
+                if UserManager.find_user_by_id(student_id)
             }
+
+            # Link graded students
             assignment._graded_students = {
                 UserManager.find_user_by_id(student_id): grade
-                for student_id, grade in assignment_data.get("graded_students", {}).items()
+                for student_id, grade in assignment_data["graded_students"].items()
+                if UserManager.find_user_by_id(student_id)
             }
+
             AssignmentManager._assignments.append(assignment)
-        print(f"DEBUG: Loaded {len(AssignmentManager._assignments)} assignments into memory.")
+
 
     @staticmethod
     def save_assignments():
-        """Save assignments to JSON."""
-        print("DEBUG: Saving assignments to assignments.json...")
+        """
+        Save all assignments to JSON.
+        """
         assignments_data = [assignment.to_dict() for assignment in AssignmentManager._assignments]
         save_json("assignments.json", assignments_data)
-        print("DEBUG: Assignments saved successfully.")
 
 class GradeManager:
     _grades = []
 
     @staticmethod
     def assign_grade(student, course, grade_value):
-        """Assign a grade to a specific student for a course."""
+        """
+        Assign a course grade to a student using a 1-5 scale.
+        """
         grade = Grade(student, course, grade_value)
         GradeManager._grades.append(grade)
-        print(f"Grade assigned: {grade}")   
+        print(f"Grade assigned: {grade}")
         return grade
+
+
 
     @staticmethod
     def view_student_grades(student):
@@ -940,7 +1341,7 @@ class GradeManager:
 
     @staticmethod
     def grade_course(course_id, instructor):
-        """Allows an instructor to grade all students in a course."""
+        """Allows an instructor to grade all students in a course with proper grading flow."""
         course = CourseManager.get_course_by_id(course_id)
         if not course:
             print("Course not found.")
@@ -955,36 +1356,69 @@ class GradeManager:
             return
 
         print(f"\n--- Grading Course: {course._name} ---")
+        print(f"Course ID: {course._course_id}, Course Name: {course._name}\n")
+
+        # Display students with their current grading status
         for student in course._enrolled_students:
+            existing_grade = next(
+                (grade._grade_value for grade in GradeManager._grades 
+                if grade._student == student and grade._course == course),
+                "Not Yet Graded"
+            )
+            print(f"Student ID: {student._id}, Name: {student._first_name} {student._last_name}, Grade: {existing_grade}")
+
+        print("\nChoose students to grade.")
+        
+        # Grade each student
+        for student in course._enrolled_students:
+            existing_grade = next(
+                (grade._grade_value for grade in GradeManager._grades 
+                if grade._student == student and grade._course == course),
+                None
+            )
+            if existing_grade is not None:
+                print(f"{student._first_name} {student._last_name} is already graded with {existing_grade}. Skipping...")
+                continue
+
+            # Input grade for the student
             try:
-                grade_value = float(input(f"Enter grade for {student._first_name} {student._last_name}: "))
-                GradeManager.assign_grade(student, course, grade_value)  # Reuse assign_grade method
+                grade_value = float(input(f"Enter grade (1.0 - 5.0) for {student._first_name} {student._last_name}: "))
+                if 1.0 <= grade_value <= 5.0:
+                    GradeManager.assign_grade(student, course, grade_value)
+                else:
+                    print(f"Invalid grade. Please enter a grade between 1.0 and 5.0. Skipping {student._first_name} {student._last_name}.")
             except ValueError:
                 print(f"Invalid input. Skipping {student._first_name} {student._last_name}.")
-    
+
     @staticmethod
     def load_grades():
-        """Load grades from JSON."""
-        print("DEBUG: Loading grades from grades.json...")
+        """
+        Load grades from JSON and link students and courses.
+        """
         grades_data = load_json("grades.json")
         print(f"DEBUG: Found {len(grades_data)} grades in the file.")
+        GradeManager._grades = []  # Clear existing grades
+
         for grade_data in grades_data:
             student = UserManager.find_user_by_id(grade_data["student_id"])
             course = CourseManager.get_course_by_id(grade_data["course_id"])
+
             if not student or not course:
-                print(f"DEBUG: Missing data for grade ID {grade_data['grade_id']}. Skipping.")
+                print(f"WARNING: Skipping grade {grade_data['grade_id']} due to missing student or course.")
                 continue
-            grade = Grade.from_dict(grade_data, student, course)
+
+            grade = Grade.from_dict(grade_data)
+            grade._student = student
+            grade._course = course
             GradeManager._grades.append(grade)
-        print(f"DEBUG: Loaded {len(GradeManager._grades)} grades into memory.")
 
     @staticmethod
     def save_grades():
-        """Save grades to JSON."""
-        print("DEBUG: Saving grades to grades.json...")
+        """
+        Save all grades to JSON.
+        """
         grades_data = [grade.to_dict() for grade in GradeManager._grades]
         save_json("grades.json", grades_data)
-        print("DEBUG: Grades saved successfully.")
 
 def general_menu():
     while True:
@@ -1062,6 +1496,19 @@ def general_menu():
 
 def student_menu(student):
     while True:
+
+        # Randomly choose a motivational method from the Student class
+        import random
+        motivational_methods = [
+            Student.motivation_assignment,
+            Student.motivation_exams,
+            Student.motivation_grades,
+            Student.motivation_progress,
+            Student.motivation_balance,
+            Student.motivation_teamwork
+        ]
+        random.choice(motivational_methods)()  # Call a random method
+
         print(f"\n--- Student Menu ({student._first_name} {student._last_name}) ---")
         print("1. View Profile")
         print("2. View Available Courses")
@@ -1077,11 +1524,11 @@ def student_menu(student):
         if choice == "1":
             student.display_profile()
         elif choice == "2":
-            CourseManager.view_all_courses()
+            CourseManager.view_available_courses(student)  # Pass the current student
 
         elif choice == "3":  # Enroll in Course
             print("\n--- Available Courses ---")
-            CourseManager.view_available_courses()  # Reuse the existing method to display all courses
+            CourseManager.view_available_courses(student)  # Pass the student here
 
             course_id = input("\nEnter Course ID to enroll: ").strip()
             course = CourseManager.get_course_by_id(course_id)
@@ -1106,9 +1553,39 @@ def student_menu(student):
             else:
                 AssignmentManager.view_all_assignments(course)
 
-        elif choice == "6":
-            assignment_id = input("Enter Assignment ID to submit: ")
+        elif choice == "6":  # Submit Assignment
+            # Prompt for course selection
+            print("\n--- Your Enrolled Courses ---")
+            if not student._enrolled_courses:
+                print("You are not enrolled in any courses.")
+                continue
+
+            for course in student._enrolled_courses:
+                print(f"Course ID: {course._course_id}, Course Name: {course._name}")
+
+            course_id = input("Enter Course ID to submit an assignment: ").strip()
+            course = CourseManager.get_course_by_id(course_id)
+
+            if not course:
+                print("Course not found.")
+                continue
+
+            if course not in student._enrolled_courses:
+                print(f"You are not enrolled in course {course._name}.")
+                continue
+
+            # Use the class method to display assignments
+            AssignmentManager.list_assignments_for_student(student, course)
+
+            assignment_id = input("\nEnter Assignment ID to submit: ").strip()
+            assignment = AssignmentManager.get_assignment_by_id(assignment_id)
+
+            if not assignment or assignment._course != course:
+                print(f"Invalid Assignment ID or the assignment is not part of course {course._name}.")
+                continue
+
             AssignmentManager.submit_assignment(student, assignment_id)
+
         
         elif choice == "7":  # View Assignment Grades
             course_id = input("Enter Course ID to view assignment grades: ").strip()
@@ -1130,6 +1607,19 @@ def student_menu(student):
 
 def instructor_menu(instructor):
     while True:
+
+         # Randomly choose a motivational method from the Instructor class
+        import random
+        motivational_methods = [
+            Instructor.motivation_teaching,
+            Instructor.motivation_students,
+            Instructor.motivation_grading,
+            Instructor.motivation_research,
+            Instructor.motivation_self_care,
+            Instructor.motivation_collaboration
+        ]
+        random.choice(motivational_methods)()  # Call a random method
+
         print(f"\n--- Instructor Menu ({instructor._first_name} {instructor._last_name}) ---")
         print("1. View Profile")
         print("2. View Available Courses")
@@ -1146,9 +1636,11 @@ def instructor_menu(instructor):
             instructor.display_profile()
             
         elif choice == "2":
-            CourseManager.view_available_courses()
+            CourseManager.view_available_courses_for_instructor()
 
         elif choice == "3":  # Apply to Course
+            CourseManager.view_available_courses_for_instructor()
+
             course_id = input("Enter Course ID to apply for: ").strip()
             course = CourseManager.get_course_by_id(course_id)
             if not course:
@@ -1173,7 +1665,9 @@ def instructor_menu(instructor):
             assignment_id = input("Enter Assignment ID: ")
             due_date = input("Enter Due Date (MM/DD/YYYY): ")
             description = input("Enter Assignment Description: ")
-            AssignmentManager.add_assignment(course_id, assignment_id, due_date, description)
+            max_grade = float(input("Enter Maximum Grade: "))
+            AssignmentManager.add_assignment(course_id, assignment_id, due_date, description, max_grade)
+
 
         elif choice == "6":  # View Passed Assignments
             course_id = input("Enter Course ID: ").strip()
@@ -1189,9 +1683,9 @@ def instructor_menu(instructor):
         elif choice == "7":  # Grade Assignment
             assignment_id = input("Enter Assignment ID: ").strip()
             student_id = input("Enter Student ID to grade: ").strip()
-            max_grade = float(input("Enter Maximum Grade: "))  # Prompt for maximum grade
-            grade = float(input("Enter Grade to assign: "))  # Prompt for grade
-            AssignmentManager.grade_assignment(assignment_id, student_id, grade, max_grade)  # Pass max_grade
+            grade = float(input("Enter Grade to assign: "))  # Prompt only for the grade
+            AssignmentManager.grade_assignment(assignment_id, student_id, grade)  # Pass only grade
+
 
 
         elif choice == "8":  # Grade Course
@@ -1204,7 +1698,6 @@ def instructor_menu(instructor):
             break
         else:
             print("Invalid choice. Please try again.")
-
 
 def admin_menu(admin):
     while True:
@@ -1268,22 +1761,32 @@ def admin_menu(admin):
                     EnrollmentManager.decline_enrollment(enrollment_id)
 
         elif choice == "7":  # Drop Student/Instructor
-            print("Options:\n1. Drop Student\n2. Drop Instructor")
-            sub_choice = input("Choose an option: ")
-            user_id = input("Enter User ID: ")
+            PlatformAdmin.drop_user_menu()
 
-            if sub_choice == "1":
-                UserManager.remove_student(user_id)
-            elif sub_choice == "2":
-                UserManager.remove_instructor(user_id)
-            else:
-                print("Invalid option.")
 
         elif choice == "8":  # Logout
             print("Logging out...")
             break
         else:
             print("Invalid choice. Please try again.")
+
+
+    """
+    Handles dropping an instructor.
+    """
+    print("\n--- Drop Instructor Menu ---")
+    print("1. Drop from Course")
+    print("2. Delete Entirely")
+    choice = input("Enter your choice (1 or 2): ").strip()
+
+    if choice == "1":
+        UserManager.drop_instructor_from_course()
+    elif choice == "2":
+        instructor_id = input("Enter Instructor ID to delete: ").strip()
+        UserManager.delete_instructor(instructor_id)
+    else:
+        print("Invalid choice. Returning to the main menu.")
+
 
 
 def main():
