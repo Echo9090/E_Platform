@@ -677,6 +677,9 @@ class UserManager:
         elif choice == "2":
             student_id = input("Enter Student ID to delete: ").strip()
             UserManager.remove_student(student_id)
+        elif choice == "3":
+            print("Returning to Drop User Menu...")
+            return
         else:
             print("Invalid choice. Returning to the main menu.")
 
@@ -696,6 +699,9 @@ class UserManager:
         elif choice == "2":
             instructor_id = input("Enter Instructor ID to delete: ").strip()
             UserManager.remove_instructor(instructor_id)
+        elif choice == "3":
+            print("Returning to Drop User Menu...")
+            return
         else:
             print("Invalid choice. Returning to the main menu.")
 
@@ -705,57 +711,78 @@ class UserManager:
         """
         Allows admin to drop a student from a specific course.
         """
-        course_id = input("Enter Course ID: ").strip()
-        course = CourseManager.get_course_by_id(course_id)
+        while True:
+            course_id = input("Enter Course ID (or 'R' to return): ").strip()
+            if course_id.lower() == 'r':
+                print("Returning to Drop Student Menu...")
+                return
 
-        if not course:
-            print("Course not found.")
-            return
+            course = CourseManager.get_course_by_id(course_id)
+            if not course:
+                print("Course not found.")
+                continue
 
-        if not course._enrolled_students:
-            print(f"No students are enrolled in course {course._name}.")
-            return
+            if not course._enrolled_students:
+                print(f"No students are enrolled in course {course._name}.")
+                return
 
-        print(f"\n--- Students in Course: {course._name} ---")
-        for student in course._enrolled_students:
-            print(f"Student ID: {student._id}, Name: {student._first_name} {student._last_name}")
+            print(f"\n--- Students in Course: {course._name} ---")
+            for student in course._enrolled_students:
+                print(f"Student ID: {student._id}, Name: {student._first_name} {student._last_name}")
 
-        student_id = input("Enter Student ID to drop: ").strip()
-        student = UserManager.find_user_by_id(student_id)
+            student_id = input("Enter Student ID to drop (or 'R' to return): ").strip()
+            if student_id.lower() == 'r':
+                print("Returning to Drop Student Menu...")
+                return
 
-        if not student or student not in course._enrolled_students:
-            print("Student not found in this course.")
-        else:
-            course._enrolled_students.remove(student)
-            student._enrolled_courses.remove(course)
-            print(f"Student {student._first_name} {student._last_name} has been dropped from course {course._name}.")
+            student = UserManager.find_user_by_id(student_id)
+            if not student or student not in course._enrolled_students:
+                print("Student not found in this course.")
+            else:
+                course._enrolled_students.remove(student)
+                student._enrolled_courses.remove(course)
+                print(f"Student {student._first_name} {student._last_name} has been dropped from course {course._name}.")
+                return
+
     
     @staticmethod
     def drop_instructor_from_course():
         """
         Allows admin to unassign an instructor from a course.
         """
-        course_id = input("Enter Course ID: ").strip()
-        course = CourseManager.get_course_by_id(course_id)
+        while True:
+            course_id = input("Enter Course ID (or 'R' to return): ").strip()
+            if course_id.lower() == 'r':
+                print("Returning to Drop Instructor Menu...")
+                return
 
-        if not course:
-            print("Course not found.")
-            return
+            course = CourseManager.get_course_by_id(course_id)
+            if not course:
+                print("Course not found.")
+                continue
 
-        if not course._instructor:
-            print(f"No instructor is assigned to the course {course._name}.")
-            return
+            if not course._instructor:
+                print(f"No instructor is assigned to the course {course._name}.")
+                return
 
-        print(f"Instructor {course._instructor._first_name} {course._instructor._last_name} is assigned to this course.")
-        confirmation = input("Do you want to unassign this instructor? (yes/no): ").strip().lower()
+            print(f"Instructor {course._instructor._first_name} {course._instructor._last_name} is assigned to this course.")
+            confirmation = input("Do you want to unassign this instructor? (yes/no or 'R' to return): ").strip().lower()
 
-        if confirmation == "yes":
-            instructor = course._instructor
-            course._instructor = None
-            instructor._assigned_courses.remove(course)
-            print(f"Instructor {instructor._first_name} {instructor._last_name} has been unassigned from course {course._name}.")
-        else:
-            print("Operation cancelled.")
+            if confirmation == "yes":
+                instructor = course._instructor
+                course._instructor = None
+                instructor._assigned_courses.remove(course)
+                print(f"Instructor {instructor._first_name} {instructor._last_name} has been unassigned from course {course._name}.")
+                return
+            elif confirmation == "no":
+                print("Operation cancelled. Returning to Drop Instructor Menu...")
+                return
+            elif confirmation == 'r':
+                print("Returning to Drop Instructor Menu...")
+                return
+            else:
+                print("Invalid input. Please enter 'yes', 'no', or 'R'.")
+
 
 
     
@@ -819,6 +846,9 @@ class PlatformAdmin:
             UserManager.drop_student_menu()
         elif choice == "2":
             UserManager.drop_instructor_menu()
+        elif choice == "3":
+            print("Returning to Admin Menu...")
+            return
         else:
             print("Invalid choice. Returning to the main menu.")
 
@@ -871,11 +901,17 @@ class CourseManager:
 
     @staticmethod
     def view_all_courses():
+        """
+        Display all courses with their IDs, names, and capacities.
+        """
         if not CourseManager._courses:
             print("No courses available.")
             return
+
+        print("\n--- All Courses ---")
         for course in CourseManager._courses:
-            print(course)
+            print(f"Course ID: {course._course_id} | Course Name: {course._name} | Capacity: {len(course._enrolled_students)}/{course._capacity}")
+
     
     @staticmethod
     def view_available_courses(student):
@@ -905,6 +941,43 @@ class CourseManager:
         print("\n--- Available Courses (Unassigned) ---")
         for course in available_courses:
             print(course)
+    
+    @staticmethod
+    def view_enrolled_courses(student):
+        """
+        Display all courses the student is enrolled in.
+        """
+        if not student._enrolled_courses:
+            print("You are not enrolled in any courses.")
+            return
+
+        print("\n--- Enrolled Courses ---")
+        for course in student._enrolled_courses:
+            print(f"Course ID: {course._course_id} | Course Name: {course._name} | Capacity: {len(course._enrolled_students)}/{course._capacity}")
+
+    @staticmethod
+    def view_applied_courses(instructor):
+        """
+        Display all courses the instructor has applied for or is assigned to.
+        """
+        applied_courses = CourseManager._applications.get(instructor._id, [])
+        assigned_courses = instructor._assigned_courses
+
+        if not applied_courses and not assigned_courses:
+            print("You have not applied to or been assigned any courses.")
+            return
+
+        print("\n--- Applied/Assigned Courses ---")
+        if applied_courses:
+            print("\nApplied Courses:")
+            for course in applied_courses:
+                print(f"Course ID: {course._course_id} | Course Name: {course._name} | Capacity: {len(course._enrolled_students)}/{course._capacity}")
+
+        if assigned_courses:
+            print("\nAssigned Courses:")
+            for course in assigned_courses:
+                print(f"Course ID: {course._course_id} | Course Name: {course._name} | Capacity: {len(course._enrolled_students)}/{course._capacity}")
+
 
 
     @staticmethod
@@ -1511,22 +1584,26 @@ def student_menu(student):
 
         print(f"\n--- Student Menu ({student._first_name} {student._last_name}) ---")
         print("1. View Profile")
-        print("2. View Available Courses")
-        print("3. Enroll in Course")
-        print("4. View Grades")
-        print("5. View Assignments")
-        print("6. Submit Assignment")
-        print("7. View Assignment Grades")
-        print("8. Notifications")
-        print("9. Logout")
+        print("2. View All Courses")
+        print("3. View Enrolled Courses")
+        print("4. Enroll in Course")
+        print("5. View Grades")
+        print("6. View Assignments")
+        print("7. Submit Assignment")
+        print("8. View Assignment Grades")
+        print("9. Notifications")
+        print("10. Logout")
         choice = input("Enter your choice: ")
         
         if choice == "1":
             student.display_profile()
         elif choice == "2":
-            CourseManager.view_available_courses(student)  # Pass the current student
+            CourseManager.view_all_courses  # Pass the current student
 
-        elif choice == "3":  # Enroll in Course
+        elif choice == "3":
+            CourseManager.view_enrolled_courses(student)
+
+        elif choice == "4":  # Enroll in Course
             print("\n--- Available Courses ---")
             CourseManager.view_available_courses(student)  # Pass the student here
 
@@ -1542,10 +1619,10 @@ def student_menu(student):
                 EnrollmentManager.create_enrollment(student, course)
 
 
-        elif choice == "4":
+        elif choice == "5":
             GradeManager.view_student_grades(student)
 
-        elif choice == "5":  # View Assignments
+        elif choice == "6":  # View Assignments
             course_id = input("Enter Course ID to view assignments: ").strip()
             course = CourseManager.get_course_by_id(course_id)
             if not course:
@@ -1553,7 +1630,7 @@ def student_menu(student):
             else:
                 AssignmentManager.view_all_assignments(course)
 
-        elif choice == "6":  # Submit Assignment
+        elif choice == "7":  # Submit Assignment
             # Prompt for course selection
             print("\n--- Your Enrolled Courses ---")
             if not student._enrolled_courses:
@@ -1587,7 +1664,7 @@ def student_menu(student):
             AssignmentManager.submit_assignment(student, assignment_id)
 
         
-        elif choice == "7":  # View Assignment Grades
+        elif choice == "8":  # View Assignment Grades
             course_id = input("Enter Course ID to view assignment grades: ").strip()
             course = CourseManager.get_course_by_id(course_id)
             if not course:
@@ -1597,9 +1674,9 @@ def student_menu(student):
             else:
                 AssignmentManager.view_assignment_grades(student, course)
 
-        elif choice == "8":
-            print("Feature not implemented: Notifications will be handled later.")
         elif choice == "9":
+            print("Feature not implemented: Notifications will be handled later.")
+        elif choice == "10":
             print("Logging out...")
             break
         else:
@@ -1622,11 +1699,11 @@ def instructor_menu(instructor):
 
         print(f"\n--- Instructor Menu ({instructor._first_name} {instructor._last_name}) ---")
         print("1. View Profile")
-        print("2. View Available Courses")
-        print("3. Apply to Course")
-        print("4. View Students Enrolled in your Course")
-        print("5. Add Assignment")
-        print("6. View Who Has Passed Assignments")
+        print("2. View All Courses")
+        print("3. View Applied/Assigned Courses")
+        print("4. Apply to Course")
+        print("5. View Students Enrolled in Your Course")
+        print("6. Add Assignment")
         print("7. Grade Assignment")
         print("8. Grade Course")
         print("9. Logout")
@@ -1636,9 +1713,12 @@ def instructor_menu(instructor):
             instructor.display_profile()
             
         elif choice == "2":
-            CourseManager.view_available_courses_for_instructor()
+            CourseManager.view_all_courses()
 
-        elif choice == "3":  # Apply to Course
+        elif choice == "3":
+            CourseManager.view_applied_courses(instructor)
+
+        elif choice == "4":  # Apply to Course
             CourseManager.view_available_courses_for_instructor()
 
             course_id = input("Enter Course ID to apply for: ").strip()
@@ -1649,7 +1729,7 @@ def instructor_menu(instructor):
                 CourseManager.apply_to_course(instructor, course)
 
 
-        elif choice == "4":  # View All Students in Course
+        elif choice == "5":  # View All Students in Course
             course_id = input("Enter Course ID: ").strip()
             course = CourseManager.get_course_by_id(course_id)
             if not course:
@@ -1660,7 +1740,7 @@ def instructor_menu(instructor):
                 CourseManager.view_students_in_course(course)
 
 
-        elif choice == "5":  # Add Assignment
+        elif choice == "6":  # Add Assignment
             course_id = input("Enter Course ID: ")
             assignment_id = input("Enter Assignment ID: ")
             due_date = input("Enter Due Date (MM/DD/YYYY): ")
@@ -1669,7 +1749,7 @@ def instructor_menu(instructor):
             AssignmentManager.add_assignment(course_id, assignment_id, due_date, description, max_grade)
 
 
-        elif choice == "6":  # View Passed Assignments
+        elif choice == "7":  # View Passed Assignments
             course_id = input("Enter Course ID: ").strip()
             course = CourseManager.get_course_by_id(course_id)
             if not course:
@@ -1680,7 +1760,7 @@ def instructor_menu(instructor):
                 AssignmentManager.view_passed_assignments(course)
 
 
-        elif choice == "7":  # Grade Assignment
+        elif choice == "8":  # Grade Assignment
             assignment_id = input("Enter Assignment ID: ").strip()
             student_id = input("Enter Student ID to grade: ").strip()
             grade = float(input("Enter Grade to assign: "))  # Prompt only for the grade
@@ -1688,7 +1768,7 @@ def instructor_menu(instructor):
 
 
 
-        elif choice == "8":  # Grade Course
+        elif choice == "9":  # Grade Course
             course_id = input("Enter Course ID to grade: ").strip()
             GradeManager.grade_course(course_id, instructor)
 
@@ -1720,16 +1800,17 @@ def admin_menu(admin):
             capacity = int(input("Capacity: "))
             course = CourseManager.create_course(name, start_date, end_date, description, capacity)
             print(f"Course created: {course}")
+
         elif choice == "2":  # Drop Course
             course_id = input("Enter Course ID to drop: ")
             CourseManager.remove_course(course_id)
+
         elif choice == "3":  # View All Users
             UserManager.view_all_users()
 
         elif choice == "4":  # View Users in a Specific Course
             course_id = input("Enter Course ID: ").strip()
             CourseManager.view_users_in_course(course_id)
-
 
         elif choice == "5":  # Assign Instructor to Course
             course_id = input("Enter Course ID: ")
@@ -1745,7 +1826,6 @@ def admin_menu(admin):
                     CourseManager._applications[course._course_id] = []
                 else:
                     print("Instructor not found.")
-
 
         elif choice == "6":  # Approve/Reject Enrollments
             course_id = input("Enter Course ID to manage enrollments: ")
@@ -1763,29 +1843,12 @@ def admin_menu(admin):
         elif choice == "7":  # Drop Student/Instructor
             PlatformAdmin.drop_user_menu()
 
-
         elif choice == "8":  # Logout
             print("Logging out...")
-            break
+            break  # Exits the loop cleanly
+
         else:
             print("Invalid choice. Please try again.")
-
-
-    """
-    Handles dropping an instructor.
-    """
-    print("\n--- Drop Instructor Menu ---")
-    print("1. Drop from Course")
-    print("2. Delete Entirely")
-    choice = input("Enter your choice (1 or 2): ").strip()
-
-    if choice == "1":
-        UserManager.drop_instructor_from_course()
-    elif choice == "2":
-        instructor_id = input("Enter Instructor ID to delete: ").strip()
-        UserManager.delete_instructor(instructor_id)
-    else:
-        print("Invalid choice. Returning to the main menu.")
 
 
 
