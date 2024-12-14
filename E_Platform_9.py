@@ -1597,8 +1597,9 @@ def student_menu(student):
         
         if choice == "1":
             student.display_profile()
+            
         elif choice == "2":
-            CourseManager.view_all_courses  # Pass the current student
+            CourseManager.view_all_courses()  # Pass the current student
 
         elif choice == "3":
             CourseManager.view_enrolled_courses(student)
