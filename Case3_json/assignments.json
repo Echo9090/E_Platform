@@ -1,1 +1,54 @@
-[]
+[
+    {
+        "assignment_id": "ASS-001",
+        "course_id": "CRS-859a31",
+        "due_date": "08/22/2024",
+        "description": "First Assignment of this Course.",
+        "max_grade": 10.0,
+        "submitted_students": {
+            "STU-24-339058": "Submitted",
+            "STU-24-181694": "Submitted",
+            "STU-24-182078": "Submitted",
+            "STU-24-240981": "Submitted",
+            "STU-24-135112": "Submitted",
+            "STU-24-310724": "Submitted",
+            "STU-24-525943": "Submitted",
+            "STU-24-336480": "Submitted",
+            "STU-24-224130": "Submitted",
+            "STU-24-129968": "Submitted",
+            "STU-24-144720": "Submitted",
+            "STU-24-176912": "Submitted",
+            "STU-24-336784": "Submitted",
+            "STU-24-167160": "Submitted",
+            "STU-24-184912": "Submitted",
+            "STU-24-637820": "Submitted"
+        },
+        "graded_students": {
+            "STU-24-339058": 10.0,
+            "STU-24-181694": 10.0,
+            "STU-24-182078": 10.0,
+            "STU-24-240981": 10.0,
+            "STU-24-135112": 10.0,
+            "STU-24-310724": 10.0,
+            "STU-24-525943": 10.0,
+            "STU-24-336480": 10.0,
+            "STU-24-224130": 10.0,
+            "STU-24-129968": 10.0,
+            "STU-24-144720": 10.0,
+            "STU-24-176912": 10.0,
+            "STU-24-336784": 10.0,
+            "STU-24-167160": 10.0,
+            "STU-24-184912": 10.0,
+            "STU-24-637820": 10.0
+        }
+    },
+    {
+        "assignment_id": "ASS-002",
+        "course_id": "CRS-859a31",
+        "due_date": "08/25/2024",
+        "description": "First Assignment of this Course.",
+        "max_grade": 15.0,
+        "submitted_students": {},
+        "graded_students": {}
+    }
+]
