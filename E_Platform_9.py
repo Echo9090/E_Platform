@@ -3,7 +3,7 @@ import uuid
 import json
 import os
 
-SAVE_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Case3_json")
+SAVE_FOLDER = r"C:\Users\Cholo\OneDrive\Desktop\Code_Activities\CS_06\Case_Study_3\Case3_json"
 
 # Ensure the folder exists
 if not os.path.exists(SAVE_FOLDER):
@@ -1138,20 +1138,36 @@ class EnrollmentManager:
         return None
     
     @staticmethod
-    def view_enrollments_by_course(course):
-        enrollments = [enrollment for enrollment in EnrollmentManager._enrollments if enrollment._course == course]
+    def view_enrollments_by_course(course, filter_pending_only=True):
+        """
+        Display enrollments for a specific course.
+        By default, only pending enrollments are displayed.
+        """
+        # Filter enrollments: show only pending if filter_pending_only is True
+        enrollments = [
+            enrollment for enrollment in EnrollmentManager._enrollments
+            if enrollment._course == course and (not filter_pending_only or enrollment._enrollment_status == "Pending")
+        ]
+
         if not enrollments:
-            print(f"No enrollments found for course: {course._name}")
+            print(f"\nNo pending enrollments found for course: {course._name}.\n")
             return
-        print(f"Enrollments for Course: {course._name}")
+
+        # Display enrollments with clean formatting
+        print(f"\n--- Pending Enrollments for Course: {course._name} ---\n")
         for enrollment in enrollments:
-            print(enrollment)
+            print(f"Enrollment ID: {enrollment._enrollment_id}")
+            print(f"Student: {enrollment._student._first_name} {enrollment._student._last_name}")
+            print(f"Course: {enrollment._course._name}")
+            print(f"Payment Status: {enrollment._payment_status}")
+            print(f"Enrollment Status: {enrollment._enrollment_status}")
+            print("-" * 40)  # Separator line for clarity
 
     @staticmethod
     def load_enrollments():
         """
         Load enrollments from JSON and link students and courses.
-        Ensure student and course relationships are updated.
+        Ensure student and course relationships are updated only for 'Approved' enrollments.
         """
         enrollments_data = load_json("enrollments.json")
         print(f"DEBUG: Loading {len(enrollments_data)} enrollments from enrollments.json")
@@ -1172,13 +1188,15 @@ class EnrollmentManager:
             enrollment._course = course
             EnrollmentManager._enrollments.append(enrollment)
 
-            # Update relationships
-            if course not in student._enrolled_courses:
-                student._enrolled_courses.append(course)  # Link course to student
-            if student not in course._enrolled_students:
-                course._enrolled_students.append(student)  # Link student to course
-
-            print(f"DEBUG: Enrollment {enrollment._enrollment_id} linked: {student._id} -> {course._course_id}")
+            # Update relationships only for 'Approved' enrollments
+            if enrollment._enrollment_status == "Approved":
+                if course not in student._enrolled_courses:
+                    student._enrolled_courses.append(course)  # Link course to student
+                if student not in course._enrolled_students:
+                    course._enrolled_students.append(student)  # Link student to course
+                print(f"DEBUG: Enrollment {enrollment._enrollment_id} APPROVED and linked: {student._id} -> {course._course_id}")
+            else:
+                print(f"DEBUG: Enrollment {enrollment._enrollment_id} NOT approved (status: {enrollment._enrollment_status}).")
 
 
     @staticmethod
@@ -1597,7 +1615,6 @@ def student_menu(student):
         
         if choice == "1":
             student.display_profile()
-            
         elif choice == "2":
             CourseManager.view_all_courses()  # Pass the current student
 
@@ -1705,9 +1722,10 @@ def instructor_menu(instructor):
         print("4. Apply to Course")
         print("5. View Students Enrolled in Your Course")
         print("6. Add Assignment")
-        print("7. Grade Assignment")
-        print("8. Grade Course")
-        print("9. Logout")
+        print("7. View Passed Assignment")
+        print("8. Grade Assignment")
+        print("9. Grade Course")
+        print("10. Logout")
         choice = input("Enter your choice: ")
 
         if choice == "1":
@@ -1774,7 +1792,7 @@ def instructor_menu(instructor):
             GradeManager.grade_course(course_id, instructor)
 
 
-        elif choice == "9": # Log out
+        elif choice == "10": # Log out
             print("Logging out...")
             break
         else:
