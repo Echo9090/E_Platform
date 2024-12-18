@@ -1,50 +1,290 @@
 [
     {
-        "id": "ADM-24-600240",
+        "id": "ADM-24-869618",
         "type": "Admin",
-        "name": "Marcu",
-        "email": "admin-adm-24-600240@platform.com",
-        "password": "N8cmz$"
+        "name": "Leon",
+        "email": "admin-adm-24-869618@platform.com",
+        "password": "ONoJxN"
     },
     {
-        "id": "STU-24-364093",
-        "type": "Student",
-        "first_name": "Mana",
-        "last_name": "Malarky",
-        "age": 17,
-        "sex": "Female",
-        "birthdate": "09/11/2007",
-        "place_of_birth": "Cebu City",
-        "email": "mana.malarky@platform.com",
-        "password": "HzuYKK",
-        "enrolled_courses": []
-    },
-    {
-        "id": "INS-24-141875",
+        "id": "INS-24-207112",
+        "first_name": "Josh",
+        "last_name": "Lorilla",
+        "age": 25,
+        "sex": "Male",
+        "birthdate": "10/12/1999",
+        "place_of_birth": "Kabacan",
+        "email": "josh.lorilla@platform.com",
+        "password": "IjRHis",
         "type": "Instructor",
-        "first_name": "Jane",
-        "last_name": "Doe",
-        "age": 24,
-        "sex": "Female",
-        "birthdate": "10/24/2000",
-        "place_of_birth": "Antinpolo City",
-        "email": "jane.doe@platform.com",
-        "password": "xqBvMU",
         "assigned_courses": [
-            "CRS-c47b6d"
+            "CRS-859a31"
         ]
     },
     {
-        "id": "INS-24-156201",
-        "type": "Instructor",
-        "first_name": "Garry",
-        "last_name": "Blue",
-        "age": 34,
+        "id": "INS-24-240526",
+        "first_name": "Yese",
+        "last_name": "Xen",
+        "age": 24,
         "sex": "Male",
-        "birthdate": "09/15/1990",
-        "place_of_birth": "Portland",
-        "email": "garry.blue@platform.com",
-        "password": "u6ZHb2",
+        "birthdate": "09/25/2000",
+        "place_of_birth": "Davao City",
+        "email": "yese.xen@platform.com",
+        "password": "tq4P5!",
+        "type": "Instructor",
         "assigned_courses": []
+    },
+    {
+        "id": "STU-24-339058",
+        "first_name": "Angel",
+        "last_name": "Angulo",
+        "age": 20,
+        "sex": "Female",
+        "birthdate": "08/20/2004",
+        "place_of_birth": "Kidapawan City",
+        "email": "angel.angulo@platform.com",
+        "password": "sFiVjp",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-181694",
+        "first_name": "Marc",
+        "last_name": "Alvienth",
+        "age": 19,
+        "sex": "Male",
+        "birthdate": "08/07/2005",
+        "place_of_birth": "Kidapwan City",
+        "email": "marc.alvienth@platform.com",
+        "password": "3J3Ni%",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-182078",
+        "first_name": "Jiovanny",
+        "last_name": "Pe",
+        "age": 21,
+        "sex": "Male",
+        "birthdate": "10/10/2003",
+        "place_of_birth": "Tagum",
+        "email": "jiovanny.pe@platform.com",
+        "password": "Xk1cOf",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-240981",
+        "first_name": "Kian",
+        "last_name": "Cadungog",
+        "age": 19,
+        "sex": "Male",
+        "birthdate": "08/12/2005",
+        "place_of_birth": "Cotabato",
+        "email": "kian.cadungog@platform.com",
+        "password": "QxToJ3",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-135112",
+        "first_name": "Gem",
+        "last_name": "Martinez",
+        "age": 20,
+        "sex": "Female",
+        "birthdate": "11/06/2004",
+        "place_of_birth": "Kidapawan City",
+        "email": "gem.martinez@platform.com",
+        "password": "UJd6eD",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-310724",
+        "first_name": "Hasmin",
+        "last_name": "Idsla",
+        "age": 21,
+        "sex": "Female",
+        "birthdate": "06/24/2003",
+        "place_of_birth": "Zambuanga",
+        "email": "hasmin.idsla@platform.com",
+        "password": "gLoDiT",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-277413",
+        "first_name": "Joshua",
+        "last_name": "Marc",
+        "age": 22,
+        "sex": "Male",
+        "birthdate": "10/12/2002",
+        "place_of_birth": "Davao City",
+        "email": "joshua.marc@platform.com",
+        "password": "q4sDSw",
+        "type": "Student",
+        "enrolled_courses": []
+    },
+    {
+        "id": "STU-24-525943",
+        "first_name": "Prince",
+        "last_name": "Saniel",
+        "age": 20,
+        "sex": "Male",
+        "birthdate": "03/21/2004",
+        "place_of_birth": "Kidapwan Ciy",
+        "email": "prince.saniel@platform.com",
+        "password": "RNFi#Y",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-336480",
+        "first_name": "Rafael",
+        "last_name": "Salilagiua",
+        "age": 20,
+        "sex": "Male",
+        "birthdate": "09/25/2004",
+        "place_of_birth": "Kidapwan City",
+        "email": "rafael.salilagiua@platform.com",
+        "password": "HQWXhR",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-224130",
+        "first_name": "Deirek",
+        "last_name": "Homez",
+        "age": 21,
+        "sex": "Male",
+        "birthdate": "10/10/2003",
+        "place_of_birth": "Kidapwan City",
+        "email": "deirek.homez@platform.com",
+        "password": "fz1@O3",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-129968",
+        "first_name": "Dmitri",
+        "last_name": "Belandres",
+        "age": 22,
+        "sex": "Female",
+        "birthdate": "09/09/2002",
+        "place_of_birth": "Kidapwan City",
+        "email": "dmitri.belandres@platform.com",
+        "password": "d9#ypu",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-144720",
+        "first_name": "Charlotte",
+        "last_name": "Carmona",
+        "age": 20,
+        "sex": "Female",
+        "birthdate": "06/06/2004",
+        "place_of_birth": "General Santos City",
+        "email": "charlotte.carmona@platform.com",
+        "password": "q2yiRo",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-176912",
+        "first_name": "Philip",
+        "last_name": "Babagonio",
+        "age": 21,
+        "sex": "Male",
+        "birthdate": "09/17/2003",
+        "place_of_birth": "General Santos City",
+        "email": "philip.babagonio@platform.com",
+        "password": "ucb%lx",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-336784",
+        "first_name": "Luis",
+        "last_name": "Tolentino",
+        "age": 20,
+        "sex": "Female",
+        "birthdate": "09/05/2004",
+        "place_of_birth": "Kidapawn City",
+        "email": "luis.tolentino@platform.com",
+        "password": "Fy2R#U",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-167160",
+        "first_name": "Keandra",
+        "last_name": "Nathalie",
+        "age": 22,
+        "sex": "Female",
+        "birthdate": "03/26/2002",
+        "place_of_birth": "Cotabato City",
+        "email": "keandra.nathalie@platform.com",
+        "password": "eKsXIk",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-184912",
+        "first_name": "Mana",
+        "last_name": "Malarky",
+        "age": 24,
+        "sex": "Female",
+        "birthdate": "09/09/2000",
+        "place_of_birth": "Metro Manila",
+        "email": "mana.malarky@platform.com",
+        "password": "O3nbpc",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
+    },
+    {
+        "id": "STU-24-637820",
+        "first_name": "Gerard",
+        "last_name": "Palma",
+        "age": 20,
+        "sex": "Male",
+        "birthdate": "08/07/2004",
+        "place_of_birth": "Kidapwan City",
+        "email": "gerard.palma@platform.com",
+        "password": "rV%XwZ",
+        "type": "Student",
+        "enrolled_courses": [
+            "CRS-859a31"
+        ]
     }
 ]
