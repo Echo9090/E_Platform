@@ -3,7 +3,7 @@ import uuid
 import json
 import os
 
-SAVE_FOLDER = r"C:\Users\Cholo\OneDrive\Desktop\Code_Activities\CS_06\Case_Study_3\Case3_json"
+SAVE_FOLDER = os.path.join(os.path.dirname(os.path.abspath(_file_)), "Case3_json")
 
 # Ensure the folder exists
 if not os.path.exists(SAVE_FOLDER):
@@ -1359,8 +1359,33 @@ class AssignmentManager:
                     f"Assignment ID: {assignment._assignment_id}, Due Date: {assignment._due_date}, "
                     f"Description: {assignment._description}"
                 )
+    
+    @staticmethod
+    def list_assignments_for_student(student, course):
+        """
+        List all assignments for a given student in a specific course.
+        """
+        # Filter assignments for the specified course
+        assignments_for_course = [
+            assignment for assignment in AssignmentManager._assignments
+            if assignment._course == course
+        ]
 
+        if not assignments_for_course:
+            print(f"No assignments found for the course: {course._name}")
+            return
 
+        print(f"\n--- Assignments for {student._first_name} {student._last_name} in Course: {course._name} ---")
+        for assignment in assignments_for_course:
+            status = "Submitted" if student in assignment._submitted_students else "Not Submitted"
+            grade = assignment._graded_students.get(student, "Not Graded")
+            print(
+                f"Assignment ID: {assignment._assignment_id}\n"
+                f"Description: {assignment._description}\n"
+                f"Due Date: {assignment._due_date}\n"
+                f"Submission Status: {status}\n"
+                f"Grade: {grade}\n"
+            )
 
     @staticmethod
     def load_assignments():
@@ -1649,16 +1674,18 @@ def student_menu(student):
                 AssignmentManager.view_all_assignments(course)
 
         elif choice == "7":  # Submit Assignment
-            # Prompt for course selection
-            print("\n--- Your Enrolled Courses ---")
+            print("\n--- Submit Assignment ---")
+
+            # Step 1: Display enrolled courses
             if not student._enrolled_courses:
                 print("You are not enrolled in any courses.")
                 continue
 
+            print("\n--- Your Enrolled Courses ---")
             for course in student._enrolled_courses:
                 print(f"Course ID: {course._course_id}, Course Name: {course._name}")
 
-            course_id = input("Enter Course ID to submit an assignment: ").strip()
+            course_id = input("\nEnter Course ID to submit an assignment: ").strip()
             course = CourseManager.get_course_by_id(course_id)
 
             if not course:
@@ -1669,17 +1696,34 @@ def student_menu(student):
                 print(f"You are not enrolled in course {course._name}.")
                 continue
 
-            # Use the class method to display assignments
+            # Step 2: List assignments for the selected course
+            print(f"\n--- Assignments for Course: {course._name} ---")
             AssignmentManager.list_assignments_for_student(student, course)
 
-            assignment_id = input("\nEnter Assignment ID to submit: ").strip()
+            # Step 3: Handle no assignments case
+            assignments_for_course = [
+                assignment for assignment in AssignmentManager._assignments if assignment._course == course
+            ]
+            if not assignments_for_course:
+                print("There are no assignments available for this course.")
+                continue
+
+            # Step 4: Prompt for assignment submission
+            assignment_id = input("\nEnter Assignment ID to submit (or press Enter to cancel): ").strip()
+            if not assignment_id:
+                print("Submission canceled.")
+                continue
+
             assignment = AssignmentManager.get_assignment_by_id(assignment_id)
 
             if not assignment or assignment._course != course:
                 print(f"Invalid Assignment ID or the assignment is not part of course {course._name}.")
                 continue
 
+            # Step 5: Submit the assignment
             AssignmentManager.submit_assignment(student, assignment_id)
+            print(f"Assignment {assignment._assignment_id} submitted successfully for {course._name}!")
+
 
         
         elif choice == "8":  # View Assignment Grades
