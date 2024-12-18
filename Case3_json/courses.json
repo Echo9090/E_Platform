@@ -1,14 +1,49 @@
 [
     {
-        "course_id": "CRS-c47b6d",
+        "course_id": "CRS-859a31",
         "name": "Math 01",
         "start_date": "08/16/2024",
         "end_date": "12/16/2024",
         "description": "Basic Mathematics Course",
         "capacity": 20,
         "enrolled_students": [
-            "STU-24-364093"
+            "STU-24-339058",
+            "STU-24-181694",
+            "STU-24-182078",
+            "STU-24-240981",
+            "STU-24-135112",
+            "STU-24-310724",
+            "STU-24-525943",
+            "STU-24-336480",
+            "STU-24-224130",
+            "STU-24-129968",
+            "STU-24-144720",
+            "STU-24-176912",
+            "STU-24-336784",
+            "STU-24-167160",
+            "STU-24-184912",
+            "STU-24-637820"
         ],
-        "instructor": "INS-24-141875"
+        "instructor": "INS-24-207112"
+    },
+    {
+        "course_id": "CRS-5ca834",
+        "name": "Science 01",
+        "start_date": "08/16/2024",
+        "end_date": "12/16/2024",
+        "description": "Basics Science Course",
+        "capacity": 20,
+        "enrolled_students": [],
+        "instructor": null
+    },
+    {
+        "course_id": "CRS-4912d2",
+        "name": "PE 01",
+        "start_date": "08/12/2024",
+        "end_date": "12/26/2024",
+        "description": "Basic PE Course",
+        "capacity": 25,
+        "enrolled_students": [],
+        "instructor": null
     }
 ]
